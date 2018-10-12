@@ -7,15 +7,18 @@ layout (location = 3) in vec3 aColor;
 //uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
+uniform mat4 lightSpaceMatrix;
 
 out vec3 normal;
-flat out vec3 fragmentPosition;
+out vec3 fragmentPosition;
 out vec3 color;
+out vec4 fragmentPositionDirectionalLightSpace;
 
 void main()
 {
     gl_Position = projection * view * vec4(aPos + aVoxelPosition, 1.0);
     fragmentPosition = vec3(vec4(aPos + aVoxelPosition, 1.0));
     normal = mat3(transpose(inverse(mat4(1.0)))) * aNormal;
+    fragmentPositionDirectionalLightSpace = lightSpaceMatrix * vec4(fragmentPosition, 1.0);
     color = aColor;
 }

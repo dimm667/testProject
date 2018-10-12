@@ -12,6 +12,19 @@ Camera::Camera() :
     updateCameraVectors();
 }
 
+
+Camera::Camera(glm::vec3 position) :
+position{position},
+worldUp{glm::vec3(0.0f, 1.0f, 0.0f)},
+yaw{yaw_default},
+pitch{pitch_default},
+movementSpeed{speed_default},
+mouseSensitivity{sensitivity_default},
+zoom{zoom_default}
+{
+    updateCameraVectors();
+}
+
 Camera::Camera(glm::vec3 position, glm::vec3 up, float yaw, float pitch) :
 position{position},
 worldUp{up},

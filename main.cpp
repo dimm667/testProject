@@ -35,67 +35,9 @@ struct Character {
 
 std::map<GLchar, Character> Characters;
 
-//float vertices[] = {
-//    // positions         // colors
-//     0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,   // bottom right
-//    -0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,   // bottom left
-//     0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f    // top
-//};
-
 const GLuint screenWidth = 800;
 const GLuint screenHeight = 600;
 
-//float vertices[] = {
-//    // positions          // colors           // texture coords
-//     0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
-//     0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
-//    -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
-//    -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // top left
-//};
-
-//float vertices[] = {
-//    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-//     0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-//     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-//     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-//    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-//    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-
-//    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-//     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-//     0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-//     0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-//    -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-//    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-
-//    -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-//    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-//    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-//    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-//    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-//    -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-//     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-//     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-//     0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-//     0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-//     0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-//     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-//    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-//     0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-//     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-//     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-//    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-//    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-
-//    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-//     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-//     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-//     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-//    -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-//    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
-//};
 
 float vertices[] = {
     // positions          // normals           // texture coords
@@ -161,33 +103,11 @@ unsigned int indices[] = {  // note that we start from 0!
     1, 2, 3    // second triangle
 };
 
-//glm::vec3 cameraPosition(0.0F, 0.0F, 3.0F);
-//glm::vec3 cameraFront(0.0F, 0.0F, -1.0F);
-//glm::vec3 cameraUp(0.0F, 1.0F, 0.0F);
 float deltaTime = 0.0f;	// Time between current frame and last frame
 float lastFrame = 0.0f; // Time of last frame
 
 
-
-//void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
-//{
-//    // Когда пользователь нажимает ESC, мы устанавливаем свойство WindowShouldClose в true,
-//    // и приложение после этого закроется
-//    if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-//        glfwSetWindowShouldClose(window, GL_TRUE);
-
-//    float cameraSpeed = 25.0f * deltaTime; // adjust accordingly
-//    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-//        cameraPosition += cameraSpeed * cameraFront;
-//    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-//        cameraPosition -= cameraSpeed * cameraFront;
-//    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-//        cameraPosition -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-//    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-//        cameraPosition += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-//}
-
-Camera camera;
+Camera camera(glm::vec3(10.0f, 10.0f, 10.0f));
 
 void processInput(GLFWwindow * window)
 {
@@ -335,6 +255,15 @@ int main()
     ShaderProgram boxInstancingShaderProgram({{"shaders/vertexInstancing.glsl", GL_VERTEX_SHADER},
                                             {"shaders/fragmentMaterialVertex.glsl", GL_FRAGMENT_SHADER}});
 
+    ShaderProgram directionShadowShaderProgram({{"shaders/vertexDirectionLight.glsl", GL_VERTEX_SHADER},
+                                            {"shaders/fragmentDirectionLight.glsl", GL_FRAGMENT_SHADER}});
+
+    ShaderProgram textureShaderProgram({{"shaders/vertexQuad.glsl", GL_VERTEX_SHADER},
+                                        {"shaders/fragmentQuad.glsl", GL_FRAGMENT_SHADER}});
+    ShaderProgram pointLightShadowShaderProgram({{"shaders/vertexPointLightShadow.glsl", GL_VERTEX_SHADER},
+                                                 {"shaders/geometryPointLightShadow.glsl", GL_GEOMETRY_SHADER},
+                                                 {"shaders/fragmentPointLightShadow.glsl", GL_FRAGMENT_SHADER}});
+
 //    Model model("models/nanosuit/nanosuit.obj");
 
     Texture diffuseMap("textures/container2.png");
@@ -354,7 +283,26 @@ int main()
 //    glBindBuffer(GL_ARRAY_BUFFER, VBO);
 //    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);
 //    glEnableVertexAttribArray(0);
-    //    glBindVertexArray(0);
+//        glBindVertexArray(0);
+
+    float quadVertices[] = {
+                // positions        // texture Coords
+                -1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
+                -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+                 1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
+                 1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+            };
+    // setup plane VAO
+    GLuint quadVAO, quadVBO;
+    glGenVertexArrays(1, &quadVAO);
+    glGenBuffers(1, &quadVBO);
+    glBindVertexArray(quadVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 
 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -455,7 +403,7 @@ int main()
 //    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glEnable(GL_CULL_FACE);
 
-    vox::VoxExporter voxModel("models/nature.vox");
+    vox::VoxExporter voxModel("models/monu10.vox");
 
     Image heightMap("textures/Heightmap.png");
 
@@ -466,7 +414,10 @@ int main()
         glm::vec3 position(static_cast<float>(voxel.component.x) * 0.1f,
                            static_cast<float>(voxel.component.z) * 0.1f,
                            static_cast<float>(voxel.component.y) * 0.1f);
-        glm::vec3 color(0.5f);
+        vox::Color vColor = voxModel.getColor(voxel.component.colorIdx);
+        glm::vec3 color(static_cast<float>(vColor.component.r) / 255.0f,
+                        static_cast<float>(vColor.component.g) / 255.0f,
+                        static_cast<float>(vColor.component.b) / 255.0f);
         vArray.set(idx++, {position, color});
     }
 //    VoxelArray2d vArray(heightMap.getWidth(), heightMap.getHeight());
@@ -480,6 +431,86 @@ int main()
 //        }
 
 
+    // --------------------------direction light shadow----------------------------------------------
+    GLuint depthMapFBO;
+    glGenFramebuffers(1, &depthMapFBO);
+
+    const GLuint SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
+
+    GLuint depthMap;
+    glGenTextures(1, &depthMap);
+    glBindTexture(GL_TEXTURE_2D, depthMap);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
+                 SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
+    glDrawBuffer(GL_NONE);
+    glReadBuffer(GL_NONE);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    {
+        std::runtime_error("ERROR::DEPTHMAP::FRAMEBUFFER\n");
+    }
+
+    float near_plane = 0.0f, far_plane = 30.0f;
+    glm::mat4 lightProjection = glm::ortho(-20.0f, 20.0f, -20.0f, 20.0f, near_plane, far_plane);
+    glm::mat4 lightView = glm::lookAt(glm::vec3( 10.0f, 20.0f,  10.0f),
+                                      glm::vec3( 0.0f, 0.0f,  0.0f),
+                                      glm::vec3( 0.0f, 1.0f,  0.0f));
+    glm::mat4 lightSpaceMatrix = lightProjection * lightView;
+
+    // ----------------------------------------------------------------------------------------------
+
+    // ------------------- point light shadows ------------------------------------------------------
+    GLuint depthCubeMapFBO;
+    glGenFramebuffers(1, &depthCubeMapFBO);
+    unsigned int depthCubemap;
+    glGenTextures(1, &depthCubemap);
+//    const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
+    glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
+    for (unsigned int i = 0; i < 6; ++i)
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, depthCubeMapFBO);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthCubeMapFBO, 0);
+    glDrawBuffer(GL_NONE);
+    glReadBuffer(GL_NONE);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    float aspect = (float)SHADOW_WIDTH/(float)SHADOW_HEIGHT;
+    float near_p = 1.0f;
+    float far_p = 25.0f;
+    glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), aspect, near_p, far_p);
+    std::vector<glm::mat4> shadowTransforms;
+
+    glm::vec3 lightPos( 10.0f,  10.0f,  10.0f);
+
+    shadowTransforms.push_back(shadowProj *
+                     glm::lookAt(lightPos, lightPos + glm::vec3( 1.0, 0.0, 0.0), glm::vec3(0.0,-1.0, 0.0)));
+    shadowTransforms.push_back(shadowProj *
+                     glm::lookAt(lightPos, lightPos + glm::vec3(-1.0, 0.0, 0.0), glm::vec3(0.0,-1.0, 0.0)));
+    shadowTransforms.push_back(shadowProj *
+                     glm::lookAt(lightPos, lightPos + glm::vec3( 0.0, 1.0, 0.0), glm::vec3(0.0, 0.0, 1.0)));
+    shadowTransforms.push_back(shadowProj *
+                     glm::lookAt(lightPos, lightPos + glm::vec3( 0.0,-1.0, 0.0), glm::vec3(0.0, 0.0,-1.0)));
+    shadowTransforms.push_back(shadowProj *
+                     glm::lookAt(lightPos, lightPos + glm::vec3( 0.0, 0.0, 1.0), glm::vec3(0.0,-1.0, 0.0)));
+    shadowTransforms.push_back(shadowProj *
+                     glm::lookAt(lightPos, lightPos + glm::vec3( 0.0, 0.0,-1.0), glm::vec3(0.0,-1.0, 0.0)));
+
+
+    //-----------------------------------------------------------------------------------------------
 
 
 
@@ -515,15 +546,15 @@ int main()
 //        boxInstancingShaderProgram.setUniform("projection", projection);
 //        vArray.draw(boxInstancingShaderProgram);
 
-        glm::vec3 pointLightPositions[] = {
+        glm::vec3 pointLightPositions[] = {lightPos,
 //            glm::vec3( 0.7f,  1.0f * sin(glfwGetTime()),  2.0f),
 //            glm::vec3( 1.0f * sin(glfwGetTime()), -3.3f, -4.0f),
 //            glm::vec3(-4.0f,  2.0f, -12.0f),
 //            glm::vec3( 1.0f * sin(glfwGetTime()),  0.0f, -1.0f * sin(glfwGetTime()))
-            glm::vec3( 10.0f,  2.1f,  10.0f),
-            glm::vec3( 10.0f,  2.1f,  10.0f),
-            glm::vec3( 10.0f,  2.1f,  10.0f),
-            glm::vec3( 10.0f,  2.1f,  10.0f),
+//            glm::vec3( 10.0f,  2.1f,  10.0f),
+//            glm::vec3( 10.0f,  2.1f,  10.0f),
+//            glm::vec3( 10.0f,  2.1f,  10.0f),
+//            glm::vec3( 10.0f,  2.1f,  10.0f),
         };
 
 //        modelShaderProgram.use();
@@ -546,22 +577,63 @@ int main()
 
 //        model.draw(cubeRefractionShaderProgram);
 
+        // render directional light shadow map
+        glCullFace(GL_FRONT);
+        glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+        glClear(GL_DEPTH_BUFFER_BIT);
+        glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+        directionShadowShaderProgram.use();
+        directionShadowShaderProgram.setUniform("lightSpaceMatrix", lightSpaceMatrix);
+        vArray.draw(directionShadowShaderProgram);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glCullFace(GL_BACK);
+
+        // render point light shadow map
+        glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+        glBindFramebuffer(GL_FRAMEBUFFER, depthCubeMapFBO);
+        glClear(GL_DEPTH_BUFFER_BIT);
+        pointLightShadowShaderProgram.use();
+        pointLightShadowShaderProgram.setUniform("far_plane", far_p);
+        pointLightShadowShaderProgram.setUniform("lightPos", lightPos);
+        for (unsigned int i = 0; i < 6; ++i)
+                        pointLightShadowShaderProgram.setUniform("shadowMatrices[" + std::to_string(i) + "]", shadowTransforms[i]);
+        vArray.draw(pointLightShadowShaderProgram);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
+        // render scene
+        glViewport(0, 0, screenWidth, screenHeight);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+//        textureShaderProgram.use();
+//        glActiveTexture(GL_TEXTURE0);
+//        glBindTexture(GL_TEXTURE_2D, depthMap);
+//        textureShaderProgram.setUniform("screenTexture", 0);
+
+////        diffuseMap.activate(GL_TEXTURE0);
+////        textureShaderProgram.setUniform("screenTexture", diffuseMap.getBindUnit());
+
+//        glBindVertexArray(quadVAO);
+//        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+//        glBindVertexArray(0);
+
         boxInstancingShaderProgram.use();
+        boxInstancingShaderProgram.setUniform("lightSpaceMatrix", lightSpaceMatrix);
         boxInstancingShaderProgram.setUniform("viewPos", camera.getPosition());
         boxInstancingShaderProgram.setUniform("projection", projection);
         boxInstancingShaderProgram.setUniform("view", localView);
         boxInstancingShaderProgram.setUniform("directionalLight.direction", glm::vec3(-0.5f, -1.0f, -0.5f));
-        boxInstancingShaderProgram.setUniform("directionalLight.ambient",  glm::vec3(0.1f, 0.1f, 0.1f));
-        boxInstancingShaderProgram.setUniform("directionalLight.diffuse",  glm::vec3(0.2f, 0.2f, 0.2f));
-        boxInstancingShaderProgram.setUniform("directionalLight.specular", glm::vec3(0.5f, 0.5f, 0.5f));
+        boxInstancingShaderProgram.setUniform("directionalLight.ambient",  glm::vec3(0.0f, 0.0f, 0.0f));
+        boxInstancingShaderProgram.setUniform("directionalLight.diffuse",  glm::vec3(0.0f, 0.0f, 0.0f));
+        boxInstancingShaderProgram.setUniform("directionalLight.specular", glm::vec3(0.0f, 0.0f, 0.0f));
 
-        for(unsigned int idx = 0; idx < 4; idx++)
+        for(unsigned int idx = 0; idx < 1; idx++)
         {
             std::string variable = std::string("pointLights[") + std::to_string(idx) + std::string("].");
             boxInstancingShaderProgram.setUniform((variable + std::string("position")).c_str(), pointLightPositions[idx]);
-            boxInstancingShaderProgram.setUniform((variable + std::string("ambient")).c_str(), glm::vec3(0.0f, 0.0f, 0.0f));
+            boxInstancingShaderProgram.setUniform((variable + std::string("ambient")).c_str(), glm::vec3(0.1f, 0.1f, 0.1f));
             boxInstancingShaderProgram.setUniform((variable + std::string("diffuse")).c_str(), glm::vec3(0.5f, 0.5f, 0.5f));
-            boxInstancingShaderProgram.setUniform((variable + std::string("specular")).c_str(), glm::vec3(1.0f, 1.0f, 1.0f));
+            boxInstancingShaderProgram.setUniform((variable + std::string("specular")).c_str(), glm::vec3(0.7f, 0.7f, 0.7f));
             boxInstancingShaderProgram.setUniform((variable + std::string("constant")).c_str(), 1.0f);
             boxInstancingShaderProgram.setUniform((variable + std::string("linear")).c_str(), 0.01f);
             boxInstancingShaderProgram.setUniform((variable + std::string("quadratic")).c_str(), 0.12f);
@@ -577,6 +649,15 @@ int main()
         boxInstancingShaderProgram.setUniform("spotLight.constant",  1.0f);
         boxInstancingShaderProgram.setUniform("spotLight.linear",    0.09f);
         boxInstancingShaderProgram.setUniform("spotLight.quadratic", 0.032f);
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, depthMap);
+        boxInstancingShaderProgram.setUniform("shadowMap", GL_TEXTURE0);
+
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
+        boxInstancingShaderProgram.setUniform("depthMap", GL_TEXTURE1);
+        boxInstancingShaderProgram.setUniform("far_plane", far_p);
 
         vArray.draw(boxInstancingShaderProgram);
 
@@ -629,7 +710,6 @@ int main()
 //        }
 
 //        glBindVertexArray(0);
-
 
 
         glDisable(GL_DEPTH_TEST);

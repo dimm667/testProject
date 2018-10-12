@@ -22,6 +22,9 @@ public:
     static constexpr float zoom_default =           45.0f;
 
     Camera();
+
+    Camera(glm::vec3 position);
+
     Camera(glm::vec3 position, glm::vec3 up, float yaw, float pitch);
     glm::mat4 getView();
     float getFieldOfView();

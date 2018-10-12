@@ -46,16 +46,20 @@ struct SpotLight {
 in vec3 color;
 in vec3 normal;
 in vec3 fragmentPosition;
+in vec4 fragmentPositionDirectionalLightSpace;
 
 uniform vec3 viewPos;
 //uniform Material material;
+uniform sampler2D shadowMap;
+uniform samplerCube depthMap;
 
 uniform DirectinalLight directionalLight;
 
-#define NR_POINT_LIGHTS 4
+#define NR_POINT_LIGHTS 1
 uniform PointLight pointLights[NR_POINT_LIGHTS];
 
 uniform SpotLight spotLight;
+uniform float far_plane;
 
 out vec4 FragColor;
 
@@ -71,7 +75,52 @@ float getBlinnPhongSpecular(vec3 lightDir, vec3 viewDir, vec3 normal, float shin
     return pow(max(dot(normal, halfwayDir), 0.0), shininess);
 }
 
-vec3 CalcDirectionalLight(DirectinalLight light, vec3 normal, vec3 viewDir)
+float directionalLightShadow(vec4 fragPosLightSpace, vec3 lightDir, vec3 normal)
+{
+    // perform perspective divide
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+
+    // transform to [0,1] range
+    projCoords = projCoords * 0.5 + 0.5;
+
+    // get closest depth value from light's perspective (using [0,1] range fragPosLight as coords)
+    float closestDepth = texture(shadowMap, projCoords.xy).r;
+
+    // get depth of current fragment from light's perspective
+    float currentDepth = projCoords.z;
+
+    // check whether current frag pos is in shadow
+    float bias = max(0.01 * (1.0 - dot(normal, lightDir)), 0.001);
+//    float shadow = (currentDepth - bias) > closestDepth  ? 1.0 : 0.0;
+    float shadow = 0.0;
+    vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
+    for(int x = -1; x <= 1; ++x)
+    {
+        for(int y = -1; y <= 1; ++y)
+        {
+            float pcfDepth = texture(shadowMap, projCoords.xy + vec2(x, y) * texelSize).r;
+            shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
+        }
+    }
+    shadow /= 9.0;
+
+    return shadow;
+}
+
+float pointLightShadow(vec3 fragPos, vec3 lightPos)
+{
+    vec3 fragToLight = fragPos - lightPos;
+    float closestDepth = texture(depthMap, fragToLight).r;
+    closestDepth *= far_plane;
+    float currentDepth = length(fragToLight);
+
+    float bias = 0.01;
+    float shadow = currentDepth -  bias > closestDepth ? 1.0 : 0.0;
+
+    return shadow;
+}
+
+vec3 CalcDirectionalLight(DirectinalLight light, vec3 normal, vec3 viewDir, vec4 posLightSpace)
 {
     vec3 lightDir = normalize(-light.direction);
 
@@ -84,11 +133,14 @@ vec3 CalcDirectionalLight(DirectinalLight light, vec3 normal, vec3 viewDir)
     float spec = getBlinnPhongSpecular(lightDir, viewDir, normal, 32.0);
 
     // combine results
-    vec3 ambient  = light.ambient  * color;
-    vec3 diffuse  = light.diffuse  * diff * color;
-    vec3 specular = light.specular * spec * color;
+    vec3 ambient  = light.ambient;
+    vec3 diffuse  = light.diffuse  * diff;
+    vec3 specular = light.specular * spec;
 
-    return (ambient + diffuse + specular);
+    // shadows
+    float shadow = directionalLightShadow(posLightSpace, lightDir, normal);
+
+    return (ambient + (diffuse + specular) * (1.0 - shadow)) * color;
 }
 
 vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
@@ -106,13 +158,13 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
     float attenuation = 1.0 / (light.constant + light.linear * distance +
                              light.quadratic * (distance * distance));
     // combine results
-    vec3 ambient  = light.ambient  * color;
-    vec3 diffuse  = light.diffuse  * diff * color;
-    vec3 specular = light.specular * spec * color;
-    ambient  *= attenuation;
-    diffuse  *= attenuation;
-    specular *= attenuation;
-    return (ambient + diffuse + specular);
+    vec3 ambient  = light.ambient;
+    vec3 diffuse  = light.diffuse  * diff;
+    vec3 specular = light.specular * spec;
+
+
+    float shadow = pointLightShadow(fragPos, light.position);
+    return (ambient + (diffuse + specular) * (1.0 - shadow)) * color * attenuation;
 }
 
 vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
@@ -161,7 +213,7 @@ void main()
 //    float intensity = clamp((theta - light.outerCutOff) / epsilon, 0.0, 1.0);
 
     // phase 1: Directional lighting
-    vec3 result = CalcDirectionalLight(directionalLight, norm, viewDir);
+    vec3 result = CalcDirectionalLight(directionalLight, norm, viewDir, fragmentPositionDirectionalLightSpace);
 
     // phase 2: Point lights
     for(int i = 0; i < NR_POINT_LIGHTS; i++)

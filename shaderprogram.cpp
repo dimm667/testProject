@@ -33,7 +33,7 @@ ShaderSubProgram::ShaderSubProgram(const std::string &pathToFile, GLenum shaderT
     {
         char infoLog[512];
         glGetShaderInfoLog(shaderID, 512, NULL, infoLog);
-        throw std::runtime_error("ERROR::SHADER::COMPILATION_FAILED\n" + std::string(infoLog));
+        throw std::runtime_error("ERROR::SHADER::COMPILATION_FAILED: " + pathToFile + "\n" + std::string(infoLog));
     }
 }
 

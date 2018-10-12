@@ -56,10 +56,12 @@ VoxExporter::VoxExporter(const std::string & pathToFile)
         ChunkInfo chunkInfo;
         file.read(reinterpret_cast<char *>(&chunkInfo), sizeof(ChunkInfo));
         wholeContentSize -= sizeof(ChunkInfo);
-        wholeContentSize -= chunkInfo.contentSize;
+
         if(compare(chunkInfo.name, SIZE))
         {
             // read model
+            wholeContentSize -= chunkInfo.contentSize;
+
             Model model;
             file.read(reinterpret_cast<char *>(&model.size), sizeof(Size));
 
@@ -85,11 +87,22 @@ VoxExporter::VoxExporter(const std::string & pathToFile)
             }
 
             models.push_back(model);
-
+        }
+        else if(compare(chunkInfo.name, RGBA))
+        {
+            // read palette
+            wholeContentSize -= chunkInfo.contentSize;
+            file.read(reinterpret_cast<char *>(&palette), sizeof(Palette));
+        }
+        else
+        {
+            // read to dev/null
+            wholeContentSize -= chunkInfo.contentSize;
+            file.seekg(chunkInfo.contentSize, std::ios_base::cur);
         }
 
         // temporary
-        wholeContentSize = 0;
+//        wholeContentSize = 0;
     }
 
 }

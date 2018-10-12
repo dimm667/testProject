@@ -42,7 +42,14 @@ set(SHADERS
     ${CMAKE_SOURCE_DIR}/shaders/fragmentRefractSkyBox.glsl
     ${CMAKE_SOURCE_DIR}/shaders/vertexInstancing.glsl
     ${CMAKE_SOURCE_DIR}/shaders/fragmentMaterialVertex.glsl
-    ${CMAKE_SOURCE_DIR}/shaders/vertexInstancingLighting.glsl)
+    ${CMAKE_SOURCE_DIR}/shaders/vertexInstancingLighting.glsl
+    ${CMAKE_SOURCE_DIR}/shaders/vertexDirectionLight.glsl
+    ${CMAKE_SOURCE_DIR}/shaders/fragmentDirectionLight.glsl
+    ${CMAKE_SOURCE_DIR}/shaders/vertexQuad.glsl
+    ${CMAKE_SOURCE_DIR}/shaders/fragmentQuad.glsl
+    ${CMAKE_SOURCE_DIR}/shaders/vertexPointLightShadow.glsl
+    ${CMAKE_SOURCE_DIR}/shaders/geometryPointLightShadow.glsl
+    ${CMAKE_SOURCE_DIR}/shaders/fragmentPointLightShadow.glsl)
 
 set(TEXTURES
      ${CMAKE_SOURCE_DIR}/textures/container.jpg

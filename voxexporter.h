@@ -17,6 +17,7 @@ typedef char chunkName[4];
 const char MAIN[4] = {'V', 'O', 'X', ' '};
 const char SIZE[4] = {'S', 'I', 'Z', 'E'};
 const char XYZI[4] = {'X', 'Y', 'Z', 'I'};
+const char RGBA[4] = {'R', 'G', 'B', 'A'};
 
 enum class chunkType
 {
@@ -91,6 +92,7 @@ union Color
         unsigned char r;
         unsigned char g;
         unsigned char b;
+        unsigned char a;
     } component;
 };
 
@@ -140,6 +142,7 @@ public:
     void draw(ShaderProgram & shader);
 
     const Model & getModel(unsigned int idx) {return models[0];}
+    Color getColor(unsigned int index) {return palette.color[index];}
 
 private:
     std::vector<Model> models;
