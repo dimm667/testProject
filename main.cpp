@@ -107,7 +107,7 @@ float deltaTime = 0.0f;	// Time between current frame and last frame
 float lastFrame = 0.0f; // Time of last frame
 
 
-Camera camera(glm::vec3(10.0f, 10.0f, 10.0f));
+Camera camera(glm::vec3(5.0f, 5.0f, 5.0f));
 
 void processInput(GLFWwindow * window)
 {
@@ -403,7 +403,7 @@ int main()
 //    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glEnable(GL_CULL_FACE);
 
-    vox::VoxExporter voxModel("models/monu10.vox");
+    vox::VoxExporter voxModel("models/castle.vox");
 
     Image heightMap("textures/Heightmap.png");
 
@@ -435,7 +435,8 @@ int main()
     GLuint depthMapFBO;
     glGenFramebuffers(1, &depthMapFBO);
 
-    const GLuint SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
+//    const GLuint SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
+    const GLuint SHADOW_WIDTH = 256, SHADOW_HEIGHT = 256;
 
     GLuint depthMap;
     glGenTextures(1, &depthMap);
@@ -483,18 +484,22 @@ int main()
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
     glBindFramebuffer(GL_FRAMEBUFFER, depthCubeMapFBO);
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthCubeMapFBO, 0);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthCubemap, 0);
     glDrawBuffer(GL_NONE);
     glReadBuffer(GL_NONE);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    {
+        std::runtime_error("ERROR::DEPTHMAP::FRAMEBUFFER\n");
+    }
 
     float aspect = (float)SHADOW_WIDTH/(float)SHADOW_HEIGHT;
-    float near_p = 1.0f;
+    float near_p = 0.1f;
     float far_p = 25.0f;
     glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), aspect, near_p, far_p);
     std::vector<glm::mat4> shadowTransforms;
 
-    glm::vec3 lightPos( 10.0f,  10.0f,  10.0f);
+    glm::vec3 lightPos( 3.0f,  3.0f,  3.0f);
 
     shadowTransforms.push_back(shadowProj *
                      glm::lookAt(lightPos, lightPos + glm::vec3( 1.0, 0.0, 0.0), glm::vec3(0.0,-1.0, 0.0)));
@@ -580,8 +585,8 @@ int main()
         // render directional light shadow map
         glCullFace(GL_FRONT);
         glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
-        glClear(GL_DEPTH_BUFFER_BIT);
         glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+        glClear(GL_DEPTH_BUFFER_BIT);
         directionShadowShaderProgram.use();
         directionShadowShaderProgram.setUniform("lightSpaceMatrix", lightSpaceMatrix);
         vArray.draw(directionShadowShaderProgram);
