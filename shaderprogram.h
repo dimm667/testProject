@@ -29,9 +29,11 @@ public:
     ShaderProgram(const std::vector<ShaderSubProgram> & shadersSubprogramms);
 
     void use();
+    GLuint getId() const    {return programId;}
 
     void setUniform(const std::string & name, float value);
     void setUniform(const std::string & name, int value);
+    void setUniform(const std::string & name, unsigned int value);
     void setUniform(const std::string & name, bool value);
     void setUniform(const std::string & name, const glm::mat4 & value, GLboolean transpose = GL_FALSE);
     void setUniform(const std::string & name, const glm::vec3 & value);

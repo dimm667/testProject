@@ -94,6 +94,11 @@ void ShaderProgram::setUniform(const std::string & name, int value)
     glUniform1i(glGetUniformLocation(programId, name.c_str()), value);
 }
 
+void ShaderProgram::setUniform(const std::string & name, unsigned int value)
+{
+    glUniform1i(glGetUniformLocation(programId, name.c_str()), value);
+}
+
 void ShaderProgram::setUniform(const std::string &name, const glm::mat4 & value, GLboolean transpose)
 {
     glUniformMatrix4fv(glGetUniformLocation(programId, name.c_str()), 1, transpose, &value[0][0]);

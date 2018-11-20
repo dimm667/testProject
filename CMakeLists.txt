@@ -41,6 +41,7 @@ set(SHADERS
     ${CMAKE_SOURCE_DIR}/shaders/fragmentReflectSkyBox.glsl
     ${CMAKE_SOURCE_DIR}/shaders/fragmentRefractSkyBox.glsl
     ${CMAKE_SOURCE_DIR}/shaders/vertexInstancing.glsl
+    ${CMAKE_SOURCE_DIR}/shaders/vertexInstancing2.glsl
     ${CMAKE_SOURCE_DIR}/shaders/fragmentMaterialVertex.glsl
     ${CMAKE_SOURCE_DIR}/shaders/vertexInstancingLighting.glsl
     ${CMAKE_SOURCE_DIR}/shaders/vertexDirectionLight.glsl
@@ -69,10 +70,14 @@ set(TEXTURES
      ${CMAKE_SOURCE_DIR}/fonts/arial.ttf)
 
 SET(SOURCES
+
+    shaders/UniformStructures/matrices.h
     shaderprogram.cpp
     shaderprogram.h
     camera.cpp
     camera.h
+    imageloader.cpp
+    imageloader.h
     texture.cpp
     texture.h
     mesh.cpp
@@ -87,6 +92,8 @@ SET(SOURCES
     voxel.h
     voxexporter.cpp
     voxexporter.h
+    uniformobject.cpp
+    uniformobject.h
     main.cpp
     )
 

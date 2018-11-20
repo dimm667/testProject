@@ -10,6 +10,10 @@
 #include "fpsestimator.h"
 #include "voxel.h"
 #include "voxexporter.h"
+#include "imageloader.h"
+#include "uniformobject.h"
+
+#include "shaders/UniformStructures/matrices.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -30,7 +34,7 @@ struct Character {
     GLuint      textureID;
     glm::ivec2  size;
     glm::ivec2  bearing;
-    GLuint      advance;
+    GLint      advance;
 };
 
 std::map<GLchar, Character> Characters;
@@ -252,8 +256,15 @@ int main()
     ShaderProgram skyBoxShaderProgram({{"shaders/vertexSkyBox.glsl", GL_VERTEX_SHADER},
                                           {"shaders/fragmentSkyBox.glsl", GL_FRAGMENT_SHADER}});
 
-    ShaderProgram boxInstancingShaderProgram({{"shaders/vertexInstancing.glsl", GL_VERTEX_SHADER},
+    ShaderProgram boxInstancingShaderProgram({{"shaders/vertexInstancing2.glsl", GL_VERTEX_SHADER},
                                             {"shaders/fragmentMaterialVertex.glsl", GL_FRAGMENT_SHADER}});
+
+    TViewProjMatrices viewProjMatrix;
+    UniformObject<TViewProjMatrices> uniformObj(viewProjMatrix);
+    uniformObj.bindToShader(boxInstancingShaderProgram, "TViewProjMatrices");
+
+    auto veiwProxy = uniformObj.getProxy<glm::mat4, offsetof(TViewProjMatrices, view), sizeof(glm::mat4)>();
+    auto projectionProxy = uniformObj.getProxy<glm::mat4, offsetof(TViewProjMatrices, projection), sizeof(glm::mat4)>();
 
     ShaderProgram directionShadowShaderProgram({{"shaders/vertexDirectionLight.glsl", GL_VERTEX_SHADER},
                                             {"shaders/fragmentDirectionLight.glsl", GL_FRAGMENT_SHADER}});
@@ -266,8 +277,8 @@ int main()
 
 //    Model model("models/nanosuit/nanosuit.obj");
 
-    Texture diffuseMap("textures/container2.png");
-    Texture specularMap("textures/container2_specular.png");
+    TextureImage diffuseMap("textures/container2.png");
+    TextureImage specularMap("textures/container2_specular.png");
     TextureCubeMap environment({"textures/skybox/right.jpg",
                                 "textures/skybox/left.jpg",
                                 "textures/skybox/top.jpg",
@@ -367,8 +378,8 @@ int main()
         // Now store character for later use
         Character character = {
             texture,
-            glm::ivec2(face->glyph->bitmap.width, face->glyph->bitmap.rows),
-            glm::ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top),
+            glm::ivec2(static_cast<int>(face->glyph->bitmap.width), static_cast<int>(face->glyph->bitmap.rows)),
+            glm::ivec2(static_cast<int>(face->glyph->bitmap_left), static_cast<int>(face->glyph->bitmap_top)),
             face->glyph->advance.x
         };
         Characters.insert(std::pair<GLchar, Character>(c, character));
@@ -405,59 +416,41 @@ int main()
 
     vox::VoxExporter voxModel("models/castle.vox");
 
-    Image heightMap("textures/Heightmap.png");
+    ImageLoader heightMap("textures/Heightmap.png");
 
-    VoxelArray vArray(voxModel.getModel(0).getNumVoxels());
-    unsigned int idx = 0;
-    for(auto voxel : voxModel.getModel(0).voxels.voxel)
-    {
-        glm::vec3 position(static_cast<float>(voxel.component.x) * 0.1f,
-                           static_cast<float>(voxel.component.z) * 0.1f,
-                           static_cast<float>(voxel.component.y) * 0.1f);
-        vox::Color vColor = voxModel.getColor(voxel.component.colorIdx);
-        glm::vec3 color(static_cast<float>(vColor.component.r) / 255.0f,
-                        static_cast<float>(vColor.component.g) / 255.0f,
-                        static_cast<float>(vColor.component.b) / 255.0f);
-        vArray.set(idx++, {position, color});
-    }
-//    VoxelArray2d vArray(heightMap.getWidth(), heightMap.getHeight());
+    // ============== voxel Model loader =======================
+//    VoxelArray vArray(voxModel.getModel(0).getNumVoxels());
+//    unsigned int idx = 0;
+//    for(auto voxel : voxModel.getModel(0).voxels.voxel)
+//    {
+//        glm::vec3 position(static_cast<float>(voxel.component.x) * 0.1f,
+//                           static_cast<float>(voxel.component.z) * 0.1f,
+//                           static_cast<float>(voxel.component.y) * 0.1f);
+//        vox::Color vColor = voxModel.getColor(voxel.component.colorIdx);
+//        glm::vec3 color(static_cast<float>(vColor.component.r) / 255.0f,
+//                        static_cast<float>(vColor.component.g) / 255.0f,
+//                        static_cast<float>(vColor.component.b) / 255.0f);
+//        vArray.set(idx++, {position, color});
+//    }
+    // ==========================================================
 
-//    for(unsigned int xIdx = 0; xIdx < heightMap.getWidth(); ++xIdx)
-//        for(unsigned int yIdx = 0; yIdx < heightMap.getHeight(); ++yIdx)
-//        {
-//            float height = 0.0f;//std::round(heightMap.get(Image::PixelDataType::R, xIdx, yIdx) * 10.0f) * .1f;
-//            vArray.set(xIdx, yIdx, {glm::vec3(xIdx * 0.1f, height, yIdx * 0.1f), glm::vec3(0.5f)});
-////            vArray.set(xIdx, yIdx, {glm::vec3(xIdx * 0.1f, xIdx * 0.1f, yIdx * 0.1f), glm::vec3(0.5f)});
-//        }
+    // ============== ground surface loader =====================
+    VoxelArray2d vArray(heightMap.getWidth(), heightMap.getHeight());
+
+    for(unsigned int xIdx = 0; xIdx < heightMap.getWidth(); ++xIdx)
+        for(unsigned int yIdx = 0; yIdx < heightMap.getHeight(); ++yIdx)
+        {
+            float height = std::round(heightMap.getPixel(ImageLoader::PixelDataType::R, xIdx, yIdx) * 10.0f) * .1f;
+            vArray.set(xIdx, yIdx, {glm::vec3(xIdx * 0.1f, height, yIdx * 0.1f), glm::vec3(0.5f)});
+//            vArray.set(xIdx, yIdx, {glm::vec3(xIdx * 0.1f, xIdx * 0.1f, yIdx * 0.1f), glm::vec3(0.5f)});
+        }
+    // ==========================================================
 
 
     // --------------------------direction light shadow----------------------------------------------
-    GLuint depthMapFBO;
-    glGenFramebuffers(1, &depthMapFBO);
-
 //    const GLuint SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
     const GLuint SHADOW_WIDTH = 256, SHADOW_HEIGHT = 256;
-
-    GLuint depthMap;
-    glGenTextures(1, &depthMap);
-    glBindTexture(GL_TEXTURE_2D, depthMap);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
-                 SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-    glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
-    glDrawBuffer(GL_NONE);
-    glReadBuffer(GL_NONE);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-    {
-        std::runtime_error("ERROR::DEPTHMAP::FRAMEBUFFER\n");
-    }
+    TextureBuffer directLightShadow(SHADOW_WIDTH, SHADOW_HEIGHT);
 
     float near_plane = 0.0f, far_plane = 30.0f;
     glm::mat4 lightProjection = glm::ortho(-20.0f, 20.0f, -20.0f, 20.0f, near_plane, far_plane);
@@ -469,29 +462,8 @@ int main()
     // ----------------------------------------------------------------------------------------------
 
     // ------------------- point light shadows ------------------------------------------------------
-    GLuint depthCubeMapFBO;
-    glGenFramebuffers(1, &depthCubeMapFBO);
-    unsigned int depthCubemap;
-    glGenTextures(1, &depthCubemap);
-//    const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
-    glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
-    for (unsigned int i = 0; i < 6; ++i)
-            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    TextureBuffer pointLightShadow(SHADOW_WIDTH, SHADOW_HEIGHT, true);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, depthCubeMapFBO);
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthCubemap, 0);
-    glDrawBuffer(GL_NONE);
-    glReadBuffer(GL_NONE);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-    {
-        std::runtime_error("ERROR::DEPTHMAP::FRAMEBUFFER\n");
-    }
 
     float aspect = (float)SHADOW_WIDTH/(float)SHADOW_HEIGHT;
     float near_p = 0.1f;
@@ -534,8 +506,12 @@ int main()
         glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glm::mat4 localView = camera.getView();
+        glm::mat4 view = camera.getView();
         glm::mat4 projection = glm::perspective(camera.getFieldOfView(), static_cast<float>(screenWidth) / static_cast<float>(screenHeight), 0.1f, 100.0f);
+        // TODO: think about this workaround
+        veiwProxy = view;
+        projectionProxy = projection;
+
 //        glm::mat4 projection = glm::ortho(-static_cast<float>(screenWidth/2), static_cast<float>(screenWidth/2), -static_cast<float>(screenHeight/2), static_cast<float>(screenHeight/2), 0.1f, 1.0f);
 //        glm::vec3 lightPos(1.0f, 1.0f * sin(glfwGetTime()), 2.0f);
 
@@ -584,18 +560,20 @@ int main()
 
         // render directional light shadow map
         glCullFace(GL_FRONT);
-        glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
-        glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+        directLightShadow.bindBuffer();
+//        glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+//        glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
         glClear(GL_DEPTH_BUFFER_BIT);
         directionShadowShaderProgram.use();
         directionShadowShaderProgram.setUniform("lightSpaceMatrix", lightSpaceMatrix);
         vArray.draw(directionShadowShaderProgram);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+//        glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glCullFace(GL_BACK);
 
         // render point light shadow map
-        glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
-        glBindFramebuffer(GL_FRAMEBUFFER, depthCubeMapFBO);
+        pointLightShadow.bindBuffer();
+//        glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+//        glBindFramebuffer(GL_FRAMEBUFFER, depthCubeMapFBO);
         glClear(GL_DEPTH_BUFFER_BIT);
         pointLightShadowShaderProgram.use();
         pointLightShadowShaderProgram.setUniform("far_plane", far_p);
@@ -603,11 +581,13 @@ int main()
         for (unsigned int i = 0; i < 6; ++i)
                         pointLightShadowShaderProgram.setUniform("shadowMatrices[" + std::to_string(i) + "]", shadowTransforms[i]);
         vArray.draw(pointLightShadowShaderProgram);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+//        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+//        glCullFace(GL_BACK);
 
 
         // render scene
         glViewport(0, 0, screenWidth, screenHeight);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 //        textureShaderProgram.use();
@@ -625,8 +605,17 @@ int main()
         boxInstancingShaderProgram.use();
         boxInstancingShaderProgram.setUniform("lightSpaceMatrix", lightSpaceMatrix);
         boxInstancingShaderProgram.setUniform("viewPos", camera.getPosition());
-        boxInstancingShaderProgram.setUniform("projection", projection);
-        boxInstancingShaderProgram.setUniform("view", localView);
+//        boxInstancingShaderProgram.setUniform("projection", projection);
+//        boxInstancingShaderProgram.setUniform("view", localView);
+//        viewProjMatrix.projection = projection;
+//        viewProjMatrix.view = localView;
+//        veiwProxy = localView;
+//        projectionProxy = projection;
+
+//        localView = veiwProxy;
+
+//        uniformObj.updateAll();
+
         boxInstancingShaderProgram.setUniform("directionalLight.direction", glm::vec3(-0.5f, -1.0f, -0.5f));
         boxInstancingShaderProgram.setUniform("directionalLight.ambient",  glm::vec3(0.0f, 0.0f, 0.0f));
         boxInstancingShaderProgram.setUniform("directionalLight.diffuse",  glm::vec3(0.0f, 0.0f, 0.0f));
@@ -655,13 +644,11 @@ int main()
         boxInstancingShaderProgram.setUniform("spotLight.linear",    0.09f);
         boxInstancingShaderProgram.setUniform("spotLight.quadratic", 0.032f);
 
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, depthMap);
-        boxInstancingShaderProgram.setUniform("shadowMap", GL_TEXTURE0);
+        directLightShadow.activate(GL_TEXTURE0);
+        pointLightShadow.activate(GL_TEXTURE1);
 
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
-        boxInstancingShaderProgram.setUniform("depthMap", GL_TEXTURE1);
+        boxInstancingShaderProgram.setUniform("shadowMap", directLightShadow.getBindUnit());
+        boxInstancingShaderProgram.setUniform("depthMap", pointLightShadow.getBindUnit());
         boxInstancingShaderProgram.setUniform("far_plane", far_p);
 
         vArray.draw(boxInstancingShaderProgram);

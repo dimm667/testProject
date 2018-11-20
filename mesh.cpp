@@ -59,7 +59,7 @@ void Mesh::draw(ShaderProgram & shader)
         else if(name == "texture_specular")
             number = std::to_string(specularNr++);
 
-        shader.setUniform((/*"material." + */name + number).c_str(), texture.getBindUnit());
+        shader.setUniform(name + number, texture.getBindUnit());
     }
 
 //    for(int i = 0; i < textures.size(); i++)

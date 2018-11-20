@@ -1,6 +1,6 @@
 #include "cube.h"
 
-Cube::Cube(float dimension, glm::vec3 coordinates, Texture & diffuse, Texture & specular) :
+Cube::Cube(float dimension, glm::vec3 coordinates, TextureImage & diffuse, TextureImage & specular) :
     position{coordinates},
     diffuseMap(diffuse),
     specularMap(specular)

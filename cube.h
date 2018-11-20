@@ -11,7 +11,7 @@
 class Cube
 {
 public:
-    Cube(float dimension, glm::vec3 coordinates, Texture & diffuse, Texture & specular);
+    Cube(float dimension, glm::vec3 coordinates, TextureImage & diffuse, TextureImage & specular);
 
     void draw(ShaderProgram & shader);
 
@@ -27,8 +27,8 @@ private:
     std::vector<Vertex> vertices;
     GLuint VBO, VAO, EBO;
 
-    Texture & diffuseMap;
-    Texture & specularMap;
+    TextureImage & diffuseMap;
+    TextureImage & specularMap;
 
 };
 

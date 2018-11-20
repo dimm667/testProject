@@ -12,8 +12,8 @@ struct Vertex {
     glm::vec2 texCoords;
 };
 
-struct TextureExtanded : public Texture {
-    TextureExtanded(const std::string & pathToFile) : Texture(pathToFile)
+struct TextureExtanded : public TextureImage {
+    TextureExtanded(const std::string & pathToFile) : TextureImage(pathToFile)
     {}
     std::string type;
     std::string path;

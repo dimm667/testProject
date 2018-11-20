@@ -1,140 +1,144 @@
 #include "texture.h"
+#include "imageloader.h"
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "deps/stb_image.h"
 
-Image::Image(const std::string &pathToFile)
-{
-    stbi_set_flip_vertically_on_load(true);
-    data = stbi_load(pathToFile.c_str(), &width, &height, &nrChannels, 0);
-    if(!data)
-    {
-        stbi_image_free(data);
-        throw std::runtime_error(std::string("ERROR::TEXTURE::LOAD\n") + std::string("Failed to load texture: ") + pathToFile + std::string("\n"));
-    }
-}
-
-float Image::get(PixelDataType type, unsigned int x, unsigned int y)
-{
-    return static_cast<float>(static_cast<unsigned char *>(data)[(x * width + y) * nrChannels + static_cast<unsigned int>(type)]) / 255.0f;
-}
-
-Image::~Image()
-{
-    stbi_image_free(data);
-}
-
-Texture::Texture(const std::string & pathToFile) :
-    bindedToUnit(GL_TEXTURE0)
+Texture::Texture(GLenum type) :
+    textureType(type)
 {
     glGenTextures(1, &texID);
-
     if(texID == GL_INVALID_VALUE )
     {
-        throw std::runtime_error(std::string("ERROR::TEXTURE::LOAD\n") + std::string("Max textures number reached. Falid to load: ") + pathToFile + std::string("\n"));
-    }
-
-    GLint width, height, nrChannels;
-    stbi_set_flip_vertically_on_load(true);
-    unsigned char *data = stbi_load(pathToFile.c_str(), &width, &height, &nrChannels, 0);
-
-    if (data)
-    {
-        GLenum format;
-        switch (nrChannels)
-        {
-        case 1: format = GL_RED; break;
-        case 3: format = GL_RGB; break;
-        case 4: format = GL_RGBA; break;
-        default: break;
-        }
-
-        glBindTexture(GL_TEXTURE_2D, texID);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        stbi_image_free(data);
-    }
-    else
-    {
-        stbi_image_free(data);
-        throw std::runtime_error(std::string("ERROR::TEXTURE::LOAD\n") + std::string("Failed to load texture: ") + pathToFile + std::string("\n"));
+        throw std::runtime_error(std::string("ERROR::TEXTURE::LOAD\n") + std::string("Max textures number reached.\n"));
     }
 }
 
-int Texture::getBindUnit() const
+
+void Texture::configure(const TextureParameterList & params)
 {
-    return static_cast<int>(bindedToUnit);
+    glBindTexture(textureType, texID);
+    for(auto && param : params)
+    {
+        glTexParameteri(textureType, param.name, param.value);
+    }
 }
 
-void Texture::bind()
+GLenum Texture::getBindUnit() const
 {
-    glBindTexture(GL_TEXTURE_2D, texID);
+    return bindedToUnit;
 }
 
 void Texture::activate(GLenum textureUint)
 {
     bindedToUnit = textureUint;
     glActiveTexture(textureUint);
-    bind();
+    glBindTexture(textureType, texID);
 }
 
 Texture::~Texture()
 {
-    // TODO: Release texture info from OpenGL.
-    //glDeleteTextures(1, &texID);
+    glDeleteTextures(1, &texID);
 }
 
-TextureCubeMap::TextureCubeMap(const std::vector<std::string> & pathsToFiles)
+TextureBuffer::TextureBuffer(int buffWidth, int buffHeight, bool isCube) :
+    Texture(isCube ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D), width(buffWidth), height(buffHeight)
 {
-    glGenTextures(1, &texID);
-    if(texID == GL_INVALID_VALUE )
+    glGenFramebuffers(1, &fbo);
+
+    glBindTexture(textureType, texID);
+
+    if(isCube)
     {
-        throw std::runtime_error(std::string("ERROR::TEXTURE_CUBE_MAP::LOAD\n") + std::string("Max textures number reached.\n"));
+        for (unsigned int i = 0; i < 6; ++i)
+        {
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+        }
+    }
+    else
+    {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
+                     width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
     }
 
-    glBindTexture(GL_TEXTURE_CUBE_MAP, texID);
+    configure({{GL_TEXTURE_MIN_FILTER, GL_NEAREST},
+              {GL_TEXTURE_MAG_FILTER, GL_NEAREST},
+              {GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE},
+              {GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE},
+              {GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE}});
 
-    int width, height, nrChannels;
-    stbi_set_flip_vertically_on_load(false);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    if(isCube)
+    {
+        glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, texID, 0);
+    }
+    else
+    {
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, texID, 0);
+    }
+    glDrawBuffer(GL_NONE);
+    glReadBuffer(GL_NONE);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    {
+        std::runtime_error("ERROR::TEXTUREBUFFER::FRAMEBUFFER\n");
+    }
+}
+
+void TextureBuffer::bindBuffer()
+{
+    glViewport(0, 0, width, height);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+}
+
+TextureImage::TextureImage(const std::string & pathToFile) :
+    Texture(GL_TEXTURE_2D)
+{
+
+    ImageLoader image(pathToFile);
+
+    GLenum format;
+    switch (image.getImageFormat())
+    {
+        case ImageLoader::ImageFormat::RED: format = GL_RED; break;
+        case ImageLoader::ImageFormat::RGB: format = GL_RGB; break;
+        case ImageLoader::ImageFormat::RGBA: format = GL_RGBA; break;
+        default: break;
+    }
+
+    glBindTexture(textureType, texID);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image.getWidth(), image.getHeight(), 0, format, GL_UNSIGNED_BYTE, image.getData());
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    configure({{GL_TEXTURE_WRAP_S, GL_REPEAT},
+               {GL_TEXTURE_WRAP_T, GL_REPEAT},
+               {GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR},
+               {GL_TEXTURE_MAG_FILTER, GL_LINEAR}});
+}
+
+TextureCubeMap::TextureCubeMap(const std::vector<std::string> & pathsToFiles) :
+    Texture(GL_TEXTURE_CUBE_MAP)
+{
+    glBindTexture(textureType, texID);
     int texIdx = 0;
     for(auto && pathToFile : pathsToFiles)
     {
-        unsigned char *data = stbi_load(pathToFile.c_str(), &width, &height, &nrChannels, 0);
-        if (data)
+        ImageLoader image(pathToFile);
+        GLenum format;
+        switch (image.getImageFormat())
         {
-            GLenum format;
-            switch (nrChannels)
-            {
-            case 1: format = GL_RED; break;
-            case 3: format = GL_RGB; break;
-            case 4: format = GL_RGBA; break;
+            case ImageLoader::ImageFormat::RED: format = GL_RED; break;
+            case ImageLoader::ImageFormat::RGB: format = GL_RGB; break;
+            case ImageLoader::ImageFormat::RGBA: format = GL_RGBA; break;
             default: break;
-            }
+        }
 
-            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + (texIdx++),
-                         0, GL_RGB, width, height, 0, format, GL_UNSIGNED_BYTE, data
-            );
-            stbi_image_free(data);
-        }
-        else
-        {
-            stbi_image_free(data);
-            throw std::runtime_error(std::string("ERROR::TEXTURE_CUBE_MAP::LOAD\n") + std::string("Failed to load texture: ") + pathToFile + std::string("\n"));
-        }
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + (texIdx++),
+                     0, GL_RGB, image.getWidth(), image.getHeight(), 0, format, GL_UNSIGNED_BYTE, image.getData());
     }
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-}
 
-void TextureCubeMap::bind()
-{
-    glBindTexture(GL_TEXTURE_CUBE_MAP, texID);
+    configure({{GL_TEXTURE_MIN_FILTER, GL_LINEAR},
+              {GL_TEXTURE_MAG_FILTER, GL_LINEAR},
+              {GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE},
+              {GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE},
+              {GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE}});
 }
 
