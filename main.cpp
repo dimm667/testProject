@@ -12,6 +12,7 @@
 #include "voxexporter.h"
 #include "imageloader.h"
 #include "uniformobject.h"
+#include "viewport.h"
 
 #include "shaders/UniformStructures/matrices.h"
 
@@ -111,7 +112,7 @@ float deltaTime = 0.0f;	// Time between current frame and last frame
 float lastFrame = 0.0f; // Time of last frame
 
 
-Camera camera(glm::vec3(5.0f, 5.0f, 5.0f));
+Camera camera(glm::vec3(1.0f, 1.0f, 1.0f));
 
 void processInput(GLFWwindow * window)
 {
@@ -233,10 +234,21 @@ int main()
     int vpWidth, vpHeight;
     glfwGetFramebufferSize(window, &vpWidth, &vpHeight);
 
-    glViewport(0, 0, vpWidth, vpHeight);
+    Viewport mainVeiwPort(0, 0, vpWidth, vpHeight);
+//    glViewport(0, 0, vpWidth, vpHeight);
 
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
+
+    // Uniform bufers
+    TViewProjMatrices viewProjMatrix;
+    UniformObject<TViewProjMatrices> uniformObj(viewProjMatrix);
+
+    // uniform proxys
+    auto veiwProxy = uniformObj.getProxy<glm::mat4, offsetof(TViewProjMatrices, view), sizeof(glm::mat4)>();
+    auto projectionProxy = uniformObj.getProxy<glm::mat4, offsetof(TViewProjMatrices, projection), sizeof(glm::mat4)>();
+    auto projViewProxy = uniformObj.getProxy<glm::mat4, offsetof(TViewProjMatrices, proj_view), sizeof(glm::mat4)>();
+
 
     ShaderProgram modelShaderProgram({{"shaders/vertex.glsl", GL_VERTEX_SHADER},
                                          {"shaders/fragmentDiffuseOnly.glsl", GL_FRAGMENT_SHADER}});
@@ -255,16 +267,12 @@ int main()
 
     ShaderProgram skyBoxShaderProgram({{"shaders/vertexSkyBox.glsl", GL_VERTEX_SHADER},
                                           {"shaders/fragmentSkyBox.glsl", GL_FRAGMENT_SHADER}});
+    uniformObj.bindToShader(skyBoxShaderProgram, "TViewProjMatrices");
 
     ShaderProgram boxInstancingShaderProgram({{"shaders/vertexInstancing2.glsl", GL_VERTEX_SHADER},
                                             {"shaders/fragmentMaterialVertex.glsl", GL_FRAGMENT_SHADER}});
-
-    TViewProjMatrices viewProjMatrix;
-    UniformObject<TViewProjMatrices> uniformObj(viewProjMatrix);
     uniformObj.bindToShader(boxInstancingShaderProgram, "TViewProjMatrices");
 
-    auto veiwProxy = uniformObj.getProxy<glm::mat4, offsetof(TViewProjMatrices, view), sizeof(glm::mat4)>();
-    auto projectionProxy = uniformObj.getProxy<glm::mat4, offsetof(TViewProjMatrices, projection), sizeof(glm::mat4)>();
 
     ShaderProgram directionShadowShaderProgram({{"shaders/vertexDirectionLight.glsl", GL_VERTEX_SHADER},
                                             {"shaders/fragmentDirectionLight.glsl", GL_FRAGMENT_SHADER}});
@@ -279,12 +287,19 @@ int main()
 
     TextureImage diffuseMap("textures/container2.png");
     TextureImage specularMap("textures/container2_specular.png");
-    TextureCubeMap environment({"textures/skybox/right.jpg",
-                                "textures/skybox/left.jpg",
-                                "textures/skybox/top.jpg",
-                                "textures/skybox/bottom.jpg",
-                                "textures/skybox/front.jpg",
-                                "textures/skybox/back.jpg"});
+    TextureCubeMap environment({"textures/skybox/lake/right.jpg",
+                                "textures/skybox/lake/left.jpg",
+                                "textures/skybox/lake/top.jpg",
+                                "textures/skybox/lake/bottom.jpg",
+                                "textures/skybox/lake/front.jpg",
+                                "textures/skybox/lake/back.jpg"});
+
+//    TextureCubeMap environment({"textures/skybox/sor_cwd/cwd_rt.jpg",
+//                                "textures/skybox/sor_cwd/cwd_lf.jpg",
+//                                "textures/skybox/sor_cwd/cwd_up.jpg",
+//                                "textures/skybox/sor_cwd/cwd_dn.jpg",
+//                                "textures/skybox/sor_cwd/cwd_ft.jpg",
+//                                "textures/skybox/sor_cwd/cwd_bk.jpg"});
 
 
 
@@ -450,7 +465,10 @@ int main()
     // --------------------------direction light shadow----------------------------------------------
 //    const GLuint SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
     const GLuint SHADOW_WIDTH = 256, SHADOW_HEIGHT = 256;
-    TextureBuffer directLightShadow(SHADOW_WIDTH, SHADOW_HEIGHT);
+    Viewport shadowsRenderViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+
+    FrameBuffer directLightShadowFB(GL_FRAMEBUFFER);
+    TextureBuffer directLightShadow(SHADOW_WIDTH, SHADOW_HEIGHT, directLightShadowFB);
 
     float near_plane = 0.0f, far_plane = 30.0f;
     glm::mat4 lightProjection = glm::ortho(-20.0f, 20.0f, -20.0f, 20.0f, near_plane, far_plane);
@@ -462,7 +480,8 @@ int main()
     // ----------------------------------------------------------------------------------------------
 
     // ------------------- point light shadows ------------------------------------------------------
-    TextureBuffer pointLightShadow(SHADOW_WIDTH, SHADOW_HEIGHT, true);
+    FrameBuffer pointLightShadowFB(GL_FRAMEBUFFER);
+    TextureCubeMapBuffer pointLightShadow(SHADOW_WIDTH, SHADOW_HEIGHT, pointLightShadowFB);
 
 
     float aspect = (float)SHADOW_WIDTH/(float)SHADOW_HEIGHT;
@@ -506,27 +525,6 @@ int main()
         glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glm::mat4 view = camera.getView();
-        glm::mat4 projection = glm::perspective(camera.getFieldOfView(), static_cast<float>(screenWidth) / static_cast<float>(screenHeight), 0.1f, 100.0f);
-        // TODO: think about this workaround
-        veiwProxy = view;
-        projectionProxy = projection;
-
-//        glm::mat4 projection = glm::ortho(-static_cast<float>(screenWidth/2), static_cast<float>(screenWidth/2), -static_cast<float>(screenHeight/2), static_cast<float>(screenHeight/2), 0.1f, 1.0f);
-//        glm::vec3 lightPos(1.0f, 1.0f * sin(glfwGetTime()), 2.0f);
-
-//        glDepthFunc(GL_LEQUAL);
-//        skyBoxShaderProgram.use();
-//        skyBoxShaderProgram.setUniform("view", glm::mat4(glm::mat3(camera.getView())));
-//        skyBoxShaderProgram.setUniform("projection", projection);
-//        skyBox.draw(skyBoxShaderProgram);
-//        glDepthFunc(GL_LESS);
-
-//        boxInstancingShaderProgram.use();
-//        boxInstancingShaderProgram.setUniform("view", localView);
-//        boxInstancingShaderProgram.setUniform("projection", projection);
-//        vArray.draw(boxInstancingShaderProgram);
-
         glm::vec3 pointLightPositions[] = {lightPos,
 //            glm::vec3( 0.7f,  1.0f * sin(glfwGetTime()),  2.0f),
 //            glm::vec3( 1.0f * sin(glfwGetTime()), -3.3f, -4.0f),
@@ -560,64 +558,55 @@ int main()
 
         // render directional light shadow map
         glCullFace(GL_FRONT);
-        directLightShadow.bindBuffer();
-//        glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
-//        glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+        shadowsRenderViewport.activate();
+        directLightShadowFB.bind();
         glClear(GL_DEPTH_BUFFER_BIT);
         directionShadowShaderProgram.use();
         directionShadowShaderProgram.setUniform("lightSpaceMatrix", lightSpaceMatrix);
         vArray.draw(directionShadowShaderProgram);
-//        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        directLightShadowFB.unbind();
         glCullFace(GL_BACK);
 
         // render point light shadow map
-        pointLightShadow.bindBuffer();
-//        glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
-//        glBindFramebuffer(GL_FRAMEBUFFER, depthCubeMapFBO);
+        shadowsRenderViewport.activate();
+        pointLightShadowFB.bind();
         glClear(GL_DEPTH_BUFFER_BIT);
         pointLightShadowShaderProgram.use();
         pointLightShadowShaderProgram.setUniform("far_plane", far_p);
         pointLightShadowShaderProgram.setUniform("lightPos", lightPos);
         for (unsigned int i = 0; i < 6; ++i)
-                        pointLightShadowShaderProgram.setUniform("shadowMatrices[" + std::to_string(i) + "]", shadowTransforms[i]);
+            pointLightShadowShaderProgram.setUniform("shadowMatrices[" + std::to_string(i) + "]", shadowTransforms[i]);
         vArray.draw(pointLightShadowShaderProgram);
-//        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-//        glCullFace(GL_BACK);
+        pointLightShadowFB.unbind();
 
 
         // render scene
-        glViewport(0, 0, screenWidth, screenHeight);
+        mainVeiwPort.activate();
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-//        textureShaderProgram.use();
-//        glActiveTexture(GL_TEXTURE0);
-//        glBindTexture(GL_TEXTURE_2D, depthMap);
-//        textureShaderProgram.setUniform("screenTexture", 0);
+        glm::mat4 view = camera.getView();
+        glm::mat4 viewSkybox = glm::mat4(glm::mat3(camera.getView()));    // for skybbox
+        glm::mat4 projection = glm::perspective(camera.getFieldOfView(), static_cast<float>(screenWidth) / static_cast<float>(screenHeight), 0.1f, 100.0f);
+        glm::mat4 pv = projection * viewSkybox;
+        // TODO: think about this workaround
+        projViewProxy = pv;
 
-////        diffuseMap.activate(GL_TEXTURE0);
-////        textureShaderProgram.setUniform("screenTexture", diffuseMap.getBindUnit());
+        glDepthFunc(GL_LEQUAL);
+        skyBoxShaderProgram.use();
+        skyBox.draw(skyBoxShaderProgram);
+        glDepthFunc(GL_LESS);
 
-//        glBindVertexArray(quadVAO);
-//        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-//        glBindVertexArray(0);
+        pv = projection * view;
+        // TODO: think about this workaround
+        projViewProxy = pv;
+
 
         boxInstancingShaderProgram.use();
         boxInstancingShaderProgram.setUniform("lightSpaceMatrix", lightSpaceMatrix);
         boxInstancingShaderProgram.setUniform("viewPos", camera.getPosition());
-//        boxInstancingShaderProgram.setUniform("projection", projection);
-//        boxInstancingShaderProgram.setUniform("view", localView);
-//        viewProjMatrix.projection = projection;
-//        viewProjMatrix.view = localView;
-//        veiwProxy = localView;
-//        projectionProxy = projection;
-
-//        localView = veiwProxy;
-
-//        uniformObj.updateAll();
-
         boxInstancingShaderProgram.setUniform("directionalLight.direction", glm::vec3(-0.5f, -1.0f, -0.5f));
-        boxInstancingShaderProgram.setUniform("directionalLight.ambient",  glm::vec3(0.0f, 0.0f, 0.0f));
+        boxInstancingShaderProgram.setUniform("directionalLight.ambient",  glm::vec3(0.2f, 0.2f, 0.2f));
         boxInstancingShaderProgram.setUniform("directionalLight.diffuse",  glm::vec3(0.0f, 0.0f, 0.0f));
         boxInstancingShaderProgram.setUniform("directionalLight.specular", glm::vec3(0.0f, 0.0f, 0.0f));
 
@@ -647,77 +636,21 @@ int main()
         directLightShadow.activate(GL_TEXTURE0);
         pointLightShadow.activate(GL_TEXTURE1);
 
-        boxInstancingShaderProgram.setUniform("shadowMap", directLightShadow.getBindUnit());
-        boxInstancingShaderProgram.setUniform("depthMap", pointLightShadow.getBindUnit());
+        boxInstancingShaderProgram.setUniform("shadowMap", directLightShadow.getBindUnitID());
+        boxInstancingShaderProgram.setUniform("depthMap", pointLightShadow.getBindUnitID());
         boxInstancingShaderProgram.setUniform("far_plane", far_p);
 
         vArray.draw(boxInstancingShaderProgram);
-
-
-//        for(auto cube : cubes)
-//        {
-//            cube.draw(cubeShaderProgram);
-////            cube.draw(cubeRefractionShaderProgram);
-//        }
-
-////        shaderProgram.setUniform("light.ambient",  glm::vec3(0.2f, 0.2f, 0.2f));
-////        shaderProgram.setUniform("light.diffuse",  glm::vec3(0.5f, 0.5f, 0.5f)); // darken the light a bit to fit the scene
-////        shaderProgram.setUniform("light.specular", glm::vec3(1.0f, 1.0f, 1.0f));
-////        //shaderProgram.setUniform("light.direction", glm::vec3(-0.2f, -1.0f, -0.3f));
-////        //shaderProgram.setUniform("light.position", lightPos);
-////        shaderProgram.setUniform("light.position", camera.getPosition());
-////        shaderProgram.setUniform("light.direction", camera.getDirection());
-////        shaderProgram.setUniform("light.cutOff",  glm::cos(glm::radians(12.5f)));
-////        shaderProgram.setUniform("light.outerCutOff",  glm::cos(glm::radians(17.5f)));
-////        shaderProgram.setUniform("light.constant",  1.0f);
-////        shaderProgram.setUniform("light.linear",    0.09f);
-////        shaderProgram.setUniform("light.quadratic", 0.032f);
-
-//        glBindVertexArray(VAO);
-
-//        for(unsigned int i = 0; i < 10; i++)
-//        {
-//          glm::mat4 localModel(1.0f);
-//          localModel = glm::translate(localModel, cubePositions[i]);
-//          float angle = 20.0f * i;
-//          localModel = glm::rotate(localModel, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-//          shaderProgram.setUniform("model", localModel);
-
-//          glDrawArrays(GL_TRIANGLES, 0, 36);
-//        }
-
-//        // drawing lamp
-//        shaderLamp.use();
-//        shaderLamp.setUniform("projection", projection);
-//        shaderLamp.setUniform("view", localView);
-//        for(unsigned int idx = 0; idx < 4; idx++)
-//        {
-//            glm::mat4 model(1.0f);
-//            model = glm::translate(model, pointLightPositions[idx]);
-//            model = glm::scale(model, glm::vec3(0.2f));
-//            shaderLamp.setUniform("model", model);
-
-//            glBindVertexArray(lightVAO);
-//            glDrawArrays(GL_TRIANGLES, 0, 36);
-//        }
-
-//        glBindVertexArray(0);
-
 
         glDisable(GL_DEPTH_TEST);
         glyphShaderProgram.use();
         glyphShaderProgram.setUniform("projection", projectionGlyph);
         glyphShaderProgram.setUniform("text", 0);
-//        RenderText(glyphShaderProgram, "This is sample text", 25.0f, 25.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f), VAO, VBO);
         RenderText(glyphShaderProgram, std::string("fps: ") + std::to_string(static_cast<int>(fps.get())), 25.0f, 25.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f), VAO, VBO);
         glEnable(GL_DEPTH_TEST);
 
         glfwSwapBuffers(window);
     }
-
-    // Properly de-allocate all resources once they've outlived their purpose
-//    glDeleteVertexArrays(1, &VAO);
-//    glDeleteBuffers(1, &VBO);
 
     glfwTerminate();
 

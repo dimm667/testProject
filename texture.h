@@ -7,6 +7,7 @@
 #include <GLFW/glfw3.h>
 #include <stdexcept>
 #include <vector>
+#include "framebuffer.h"
 
 ///
 /// \brief The Texture class
@@ -32,7 +33,7 @@ public:
     /// \brief getBindUnit
     /// \return
     ///
-    virtual GLenum getBindUnit() const;
+    virtual GLenum getBindUnitID() const;
 
     ///
     /// \brief activate
@@ -70,6 +71,21 @@ protected:
     GLenum bindedToUnit =   GL_TEXTURE0;            ///<
 };
 
+
+struct TexImageFormat
+{
+    GLenum internalFormat;
+    GLenum pixelFormat;
+    GLenum pixelType;
+};
+
+static const TexImageFormat defaultTexImageFormat
+{
+    .internalFormat = GL_DEPTH_COMPONENT,
+    .pixelFormat = GL_DEPTH_COMPONENT,
+    .pixelType = GL_FLOAT
+};
+
 ///
 /// \brief The TextureBuffer class
 ///
@@ -81,20 +97,26 @@ public:
     /// \param width
     /// \param height
     ///
-    TextureBuffer(int width, int height, bool isCube = false);
+    TextureBuffer(int width, int height, FrameBuffer & fb, TexImageFormat format = defaultTexImageFormat, GLenum attachment = GL_DEPTH_ATTACHMENT);
 
     virtual ~TextureBuffer() = default;
 
-    void bindBuffer();
+private:
+    FrameBuffer & frameBuffer;
+    GLuint width;
+    GLuint height;
+};
 
-    ///
-    /// \brief getFboId
-    /// \return
-    ///
-    GLuint getFboId() {return fbo;}
+///
+/// \brief The TextureCubeMapBuffer class
+///
+class TextureCubeMapBuffer : public Texture
+{
+public:
+    TextureCubeMapBuffer(int width, int height, FrameBuffer & fb, TexImageFormat format = defaultTexImageFormat, GLenum attachment = GL_DEPTH_ATTACHMENT);
 
 private:
-    GLuint fbo;         ///<
+    FrameBuffer & frameBuffer;
     GLuint width;
     GLuint height;
 };

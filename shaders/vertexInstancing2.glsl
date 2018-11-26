@@ -9,6 +9,7 @@ layout (std140) uniform TViewProjMatrices
 {
     mat4 view;
     mat4 projection;
+    mat4 proj_view;
 };
 
 uniform mat4 lightSpaceMatrix;
@@ -20,7 +21,7 @@ out vec4 fragmentPositionDirectionalLightSpace;
 
 void main()
 {
-    gl_Position = projection * view * vec4(aPos + aVoxelPosition, 1.0);
+    gl_Position = proj_view * vec4(aPos + aVoxelPosition, 1.0);
     fragmentPosition = vec3(vec4(aPos + aVoxelPosition, 1.0));
     normal = mat3(transpose(inverse(mat4(1.0)))) * aNormal;
     fragmentPositionDirectionalLightSpace = lightSpaceMatrix * vec4(fragmentPosition, 1.0);

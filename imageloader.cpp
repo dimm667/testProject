@@ -4,10 +4,11 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "deps/stb_image.h"
 
-ImageLoader::ImageLoader(const std::string & pathToFile)
+ImageLoader::ImageLoader(const std::string & pathToFile, bool flip)
 {
-    stbi_set_flip_vertically_on_load(true);
+    stbi_set_flip_vertically_on_load(flip);
     data = stbi_load(pathToFile.c_str(), &width, &height, &nrChannels, 0);
+    format = static_cast<ImageFormat>(nrChannels);
     if(data == nullptr)
     {
         stbi_image_free(data);

@@ -26,36 +26,12 @@ template <class T, typename std::enable_if<
 class UniformObject : private UniformObjectMonitor
 {
 public:
-    UniformObject(const T & data/*, const ShaderProgram & shader, std::string name*/) : ref_data(data)
+    UniformObject(const T & data) : ref_data(data)
     {
-//        unsigned int ub_index = glGetUniformBlockIndex(shader.getId(), name.c_str());
-//        if(ub_index == GL_INVALID_INDEX)
-//        {
-//            throw std::runtime_error(std::string("ERROR::UBO::BINDING\n") + std::string("Can't find specidied uniform object in the shader programm.\n"));
-//        }
-//        else if(glGetError() == GL_INVALID_OPERATION)
-//        {
-//            throw std::runtime_error(std::string("ERROR::UBO::BINDING\n") + std::string("Can't find specidied shader programm.\n"));
-//        }
-
         glGenBuffers(1, &ubo);
         glBindBuffer(GL_UNIFORM_BUFFER, ubo);
-        glBufferData(GL_UNIFORM_BUFFER, sizeof(T), NULL, GL_STATIC_DRAW);
+        glBufferData(GL_UNIFORM_BUFFER, sizeof(T), NULL, GL_DYNAMIC_DRAW);
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-//        glUniformBlockBinding(shader.getId(), ub_index, ownBindingPoint);
-//        if(glGetError() == GL_INVALID_VALUE)
-//        {
-//            glDeleteBuffers(1, &ubo);
-//            throw std::runtime_error(std::string("ERROR::UBO::BINDING\n") + std::string("Can't bind.\n"));
-//        }
-
-//        glBindBufferBase(GL_UNIFORM_BUFFER, ownBindingPoint, ubo);
-//        if(glGetError() == GL_INVALID_VALUE || glGetError() == GL_INVALID_ENUM)
-//        {
-//            glDeleteBuffers(1, &ubo);
-//            throw std::runtime_error(std::string("ERROR::UBO::BINDING\n") + std::string("Can't bind.\n"));
-//        }
     }
 
     void bindToShader(const ShaderProgram & shader, std::string name)
@@ -98,20 +74,8 @@ public:
         glBindBuffer(GL_UNIFORM_BUFFER, bindedBuffer);
     }
 
-
-    ///
-    /// \brief The IUniformProxy class
-    ///
-    template<typename Q>
-    class IUniformProxy
-    {
-    public:
-        IUniformProxy() = default;
-        virtual void operator=(const Q & other) = 0;
-    };
-
     template<typename Q, unsigned int offset, unsigned int size>
-    class UniformProxy/* : public IUniformProxy<Q>*/
+    class UniformProxy
     {
     public:
         UniformProxy(UniformObject<T> & outer) :
@@ -156,34 +120,8 @@ private:
         // bind buffer back
         glBindBuffer(GL_UNIFORM_BUFFER, bindedBuffer);
     }
-
-//    template<typename Q, unsigned int offset, unsigned int size>
-//    class UniformProxy : public IUniformProxy<Q>
-//    {
-//    public:
-//        UniformProxy(UniformObject<T> & outer) :
-//            ref_outer(outer)
-//        {}
-
-//        virtual void operator=(const Q & other) override
-//        {
-//            ref_outer.updatePartial<Q, offset, size>(other);
-//        }
-
-//    private:
-//        UniformObject<T> & ref_outer;
-//    };
-
     const T & ref_data;
     unsigned int ubo;
-};
-
-
-template<typename T>
-class IUniformProxy
-{
-public:
-    virtual T & operator=(const T & other) = 0;
 };
 
 #endif // UNIFORMOBJECT_H

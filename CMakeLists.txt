@@ -36,6 +36,7 @@ set(SHADERS
     ${CMAKE_SOURCE_DIR}/shaders/fragmentDiffuseOnly.glsl
     ${CMAKE_SOURCE_DIR}/shaders/fragmentGlyph.glsl
     ${CMAKE_SOURCE_DIR}/shaders/vertexSkyBox.glsl
+    ${CMAKE_SOURCE_DIR}/shaders/vertexSkyBox2.glsl
     ${CMAKE_SOURCE_DIR}/shaders/fragmentSkyBox.glsl
     ${CMAKE_SOURCE_DIR}/shaders/vertexReflectSkyBox.glsl
     ${CMAKE_SOURCE_DIR}/shaders/fragmentReflectSkyBox.glsl
@@ -57,12 +58,18 @@ set(TEXTURES
      ${CMAKE_SOURCE_DIR}/textures/wall.jpg
      ${CMAKE_SOURCE_DIR}/textures/container2.png
      ${CMAKE_SOURCE_DIR}/textures/container2_specular.png
-     ${CMAKE_SOURCE_DIR}/textures/skybox/back.jpg
-     ${CMAKE_SOURCE_DIR}/textures/skybox/bottom.jpg
-     ${CMAKE_SOURCE_DIR}/textures/skybox/front.jpg
-     ${CMAKE_SOURCE_DIR}/textures/skybox/left.jpg
-     ${CMAKE_SOURCE_DIR}/textures/skybox/right.jpg
-     ${CMAKE_SOURCE_DIR}/textures/skybox/top.jpg
+     ${CMAKE_SOURCE_DIR}/textures/skybox/lake/back.jpg
+     ${CMAKE_SOURCE_DIR}/textures/skybox/lake/bottom.jpg
+     ${CMAKE_SOURCE_DIR}/textures/skybox/lake/front.jpg
+     ${CMAKE_SOURCE_DIR}/textures/skybox/lake/left.jpg
+     ${CMAKE_SOURCE_DIR}/textures/skybox/lake/right.jpg
+     ${CMAKE_SOURCE_DIR}/textures/skybox/lake/top.jpg
+     ${CMAKE_SOURCE_DIR}/textures/skybox/sor_cwd/cwd_bk.JPG
+     ${CMAKE_SOURCE_DIR}/textures/skybox/sor_cwd/cwd_dn.JPG
+     ${CMAKE_SOURCE_DIR}/textures/skybox/sor_cwd/cwd_ft.JPG
+     ${CMAKE_SOURCE_DIR}/textures/skybox/sor_cwd/cwd_lf.JPG
+     ${CMAKE_SOURCE_DIR}/textures/skybox/sor_cwd/cwd_rt.JPG
+     ${CMAKE_SOURCE_DIR}/textures/skybox/sor_cwd/cwd_up.JPG
      ${CMAKE_SOURCE_DIR}/textures/Heightmap.png
      )
 
@@ -74,10 +81,12 @@ SET(SOURCES
     shaders/UniformStructures/matrices.h
     shaderprogram.cpp
     shaderprogram.h
+    viewport.h
     camera.cpp
     camera.h
     imageloader.cpp
     imageloader.h
+    framebuffer.h
     texture.cpp
     texture.h
     mesh.cpp

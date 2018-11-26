@@ -20,7 +20,7 @@ public:
         RGBA =  4,
     };
 
-    ImageLoader(const std::string & pathToFile);
+    ImageLoader(const std::string & pathToFile, bool flip = true);
     ~ImageLoader();
     float getPixel(PixelDataType type, unsigned int x, unsigned int y);
     float getWidth() const {return width;}

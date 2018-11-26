@@ -22,9 +22,9 @@ void Texture::configure(const TextureParameterList & params)
     }
 }
 
-GLenum Texture::getBindUnit() const
+GLenum Texture::getBindUnitID() const
 {
-    return bindedToUnit;
+    return bindedToUnit - GL_TEXTURE0;
 }
 
 void Texture::activate(GLenum textureUint)
@@ -39,24 +39,30 @@ Texture::~Texture()
     glDeleteTextures(1, &texID);
 }
 
-TextureBuffer::TextureBuffer(int buffWidth, int buffHeight, bool isCube) :
-    Texture(isCube ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D), width(buffWidth), height(buffHeight)
+TextureBuffer::TextureBuffer(int buffWidth, int buffHeight, FrameBuffer & fb, TexImageFormat format, GLenum attachment) :
+    Texture(GL_TEXTURE_2D), frameBuffer(fb), width(buffWidth), height(buffHeight)
 {
-    glGenFramebuffers(1, &fbo);
-
     glBindTexture(textureType, texID);
 
-    if(isCube)
+    glTexImage2D(GL_TEXTURE_2D, 0, format.internalFormat,
+                 width, height, 0, format.pixelFormat, format.pixelType, NULL);
+
+    Texture::configure({  {GL_TEXTURE_MIN_FILTER, GL_NEAREST},
+                          {GL_TEXTURE_MAG_FILTER, GL_NEAREST},
+                          {GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE},
+                          {GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE},
+                          {GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE}});
+
+    frameBuffer.attachTextures2D({{attachment, texID}});
+}
+
+TextureCubeMapBuffer::TextureCubeMapBuffer(int buffWidth, int buffHeight, FrameBuffer & fb, TexImageFormat format, GLenum attachment) :
+    Texture(GL_TEXTURE_CUBE_MAP), frameBuffer(fb), width(buffWidth), height(buffHeight)
+{
+    glBindTexture(textureType, texID);
+    for (unsigned int i = 0; i < 6; ++i)
     {
-        for (unsigned int i = 0; i < 6; ++i)
-        {
-            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-        }
-    }
-    else
-    {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
-                     width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, format.internalFormat, width, height, 0, format.pixelFormat, format.pixelType, NULL);
     }
 
     configure({{GL_TEXTURE_MIN_FILTER, GL_NEAREST},
@@ -65,28 +71,7 @@ TextureBuffer::TextureBuffer(int buffWidth, int buffHeight, bool isCube) :
               {GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE},
               {GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE}});
 
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-    if(isCube)
-    {
-        glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, texID, 0);
-    }
-    else
-    {
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, texID, 0);
-    }
-    glDrawBuffer(GL_NONE);
-    glReadBuffer(GL_NONE);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-    {
-        std::runtime_error("ERROR::TEXTUREBUFFER::FRAMEBUFFER\n");
-    }
-}
-
-void TextureBuffer::bindBuffer()
-{
-    glViewport(0, 0, width, height);
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    frameBuffer.attachTextures({{attachment, texID}});
 }
 
 TextureImage::TextureImage(const std::string & pathToFile) :
@@ -121,7 +106,7 @@ TextureCubeMap::TextureCubeMap(const std::vector<std::string> & pathsToFiles) :
     int texIdx = 0;
     for(auto && pathToFile : pathsToFiles)
     {
-        ImageLoader image(pathToFile);
+        ImageLoader image(pathToFile, false);
         GLenum format;
         switch (image.getImageFormat())
         {

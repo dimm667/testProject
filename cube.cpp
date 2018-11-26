@@ -75,8 +75,8 @@ void Cube::draw(ShaderProgram & shader)
     specularMap.activate(GL_TEXTURE1);
 
     shader.setUniform("material.ambient",  glm::vec3(1.0f, 0.5f, 0.31f));
-    shader.setUniform("material.diffuse",  diffuseMap.getBindUnit());
-    shader.setUniform("material.specular", specularMap.getBindUnit());
+    shader.setUniform("material.diffuse",  diffuseMap.getBindUnitID());
+    shader.setUniform("material.specular", specularMap.getBindUnitID());
     shader.setUniform("material.shininess", 32.0f);
 
     glBindVertexArray(VAO);
@@ -150,7 +150,7 @@ void SkyBox::draw(ShaderProgram & shader)
 {
     environment.activate(GL_TEXTURE0);
 
-    shader.setUniform("skyBox",  environment.getBindUnit());
+    shader.setUniform("skyBox", environment.getBindUnitID());
 
     glBindVertexArray(VAO);
     glDrawArrays(GL_TRIANGLES, 0, 36);
