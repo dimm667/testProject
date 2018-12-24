@@ -51,7 +51,9 @@ set(SHADERS
     ${CMAKE_SOURCE_DIR}/shaders/fragmentQuad.glsl
     ${CMAKE_SOURCE_DIR}/shaders/vertexPointLightShadow.glsl
     ${CMAKE_SOURCE_DIR}/shaders/geometryPointLightShadow.glsl
-    ${CMAKE_SOURCE_DIR}/shaders/fragmentPointLightShadow.glsl)
+    ${CMAKE_SOURCE_DIR}/shaders/fragmentPointLightShadow.glsl
+    ${CMAKE_SOURCE_DIR}/shaders/fragmentDefferedShading.glsl
+    ${CMAKE_SOURCE_DIR}/shaders/fragmentMaterialVertexDeffered.glsl)
 
 set(TEXTURES
      ${CMAKE_SOURCE_DIR}/textures/container.jpg
@@ -71,6 +73,7 @@ set(TEXTURES
      ${CMAKE_SOURCE_DIR}/textures/skybox/sor_cwd/cwd_rt.JPG
      ${CMAKE_SOURCE_DIR}/textures/skybox/sor_cwd/cwd_up.JPG
      ${CMAKE_SOURCE_DIR}/textures/Heightmap.png
+     ${CMAKE_SOURCE_DIR}/textures/myHeightmap.png
      )
 
  set(FONTS
@@ -86,6 +89,7 @@ SET(SOURCES
     camera.h
     imageloader.cpp
     imageloader.h
+    renderbuffer.h
     framebuffer.h
     texture.cpp
     texture.h
@@ -103,6 +107,8 @@ SET(SOURCES
     voxexporter.h
     uniformobject.cpp
     uniformobject.h
+    worlddatacontainer.cpp
+    worlddatacontainer.h
     main.cpp
     )
 

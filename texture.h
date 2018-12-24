@@ -41,6 +41,8 @@ public:
     ///
     virtual void activate(GLenum textureUint);
 
+    GLuint getId() const {return texID;}
+
 protected:
     ///
     /// \brief The TextureParamet struct
@@ -97,12 +99,12 @@ public:
     /// \param width
     /// \param height
     ///
-    TextureBuffer(int width, int height, FrameBuffer & fb, TexImageFormat format = defaultTexImageFormat, GLenum attachment = GL_DEPTH_ATTACHMENT);
+    TextureBuffer(int width, int height, /*FrameBuffer & fb,*/ TexImageFormat format = defaultTexImageFormat/*, GLenum attachment = GL_DEPTH_ATTACHMENT*/);
 
     virtual ~TextureBuffer() = default;
 
 private:
-    FrameBuffer & frameBuffer;
+//    FrameBuffer & frameBuffer;
     GLuint width;
     GLuint height;
 };

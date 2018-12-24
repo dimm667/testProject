@@ -3,6 +3,7 @@
 #include <glad/glad.h>
 #include <stdexcept>
 #include <vector>
+#include "renderbuffer.h"
 
 class FrameBuffer
 {
@@ -40,20 +41,28 @@ public:
             glFramebufferTexture2D(target, attachmentConf.attachTo, GL_TEXTURE_2D, attachmentConf.texture, 0);
             att.push_back(attachmentConf.attachTo);
         }
+
         glDrawBuffers(att.size(), &att.front());
         glReadBuffer(GL_NONE);
 
         if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         {
-            std::runtime_error("ERROR::TEXTUREBUFFER::FRAMEBUFFER\n");
+            throw std::runtime_error("ERROR::TEXTUREBUFFER::FRAMEBUFFER\n");
         }
+        unbind();
+    }
+
+    void attachRenderBuffer(const RenderBuffer & rb, GLenum attachTo)
+    {
+        bind();
+        glFramebufferRenderbuffer(target, attachTo, GL_RENDERBUFFER, rb.getId());
         unbind();
     }
 
     void attachTextures(const Attachments & attachments)
     {
         bind();
-//        std::vector<GLuint> att;
+        std::vector<GLuint> att;
         for(auto && attachmentConf : attachments)
         {
             glFramebufferTexture(target, attachmentConf.attachTo, attachmentConf.texture, 0);
@@ -64,7 +73,7 @@ public:
 
         if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         {
-            std::runtime_error("ERROR::TEXTUREBUFFER::FRAMEBUFFER\n");
+            throw std::runtime_error("ERROR::TEXTUREBUFFER::FRAMEBUFFER\n");
         }
         unbind();
     }
@@ -85,7 +94,7 @@ public:
     }
 
 private:
-    std::vector<GLuint> att;
+//    std::vector<GLuint> att;
     GLuint fbo;
     GLenum target;
 };

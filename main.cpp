@@ -43,6 +43,12 @@ std::map<GLchar, Character> Characters;
 const GLuint screenWidth = 800;
 const GLuint screenHeight = 600;
 
+struct TDebugFlags
+{
+    bool enableDirectShadowComputing;
+    bool enablePointShadowComputing;
+    bool enableSceneRendering;
+} debug_flags = {true, true, true};
 
 float vertices[] = {
     // positions          // normals           // texture coords
@@ -112,7 +118,7 @@ float deltaTime = 0.0f;	// Time between current frame and last frame
 float lastFrame = 0.0f; // Time of last frame
 
 
-Camera camera(glm::vec3(1.0f, 1.0f, 1.0f));
+Camera camera(glm::vec3(1.0f, 0.5f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f), 45.0, 0.0);
 
 void processInput(GLFWwindow * window)
 {
@@ -131,6 +137,16 @@ void processInput(GLFWwindow * window)
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         direction = Camera_Movement::RIGHT;
 
+    if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
+        debug_flags.enableDirectShadowComputing = !debug_flags.enableDirectShadowComputing;
+
+    if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
+        debug_flags.enablePointShadowComputing = !debug_flags.enablePointShadowComputing;
+
+    if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS)
+        debug_flags.enableSceneRendering = !debug_flags.enableSceneRendering;
+
+
     camera.processKeyboard(direction, deltaTime);
 }
 
@@ -141,18 +157,30 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
     static float yaw = 0.0f, pitch = 0.0f;
     static bool firstMouse = true;
 
-    if(firstMouse) // this bool variable is initially set to true
+    bool buttonPressed = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+
+    if(firstMouse && buttonPressed) // this bool variable is initially set to true
     {
         lastX = xpos;
         lastY = ypos;
         firstMouse = false;
+//        camera.ProcessMouseMovement(xpos, ypos);
+    }
+    else if(!firstMouse && !buttonPressed)
+    {
+        firstMouse = true;
     }
 
-    float xoffset = xpos - lastX;
-    float yoffset = lastY - ypos; // reversed since y-coordinates range from bottom to top
-    camera.ProcessMouseMovement(xoffset, yoffset);
-    lastX = xpos;
-    lastY = ypos;
+    if(buttonPressed)
+    {
+        float xoffset = lastX - xpos;
+        float yoffset = ypos - lastY; // reversed since y-coordinates range from bottom to top
+        camera.ProcessMouseMovement(xoffset * 0.1f, yoffset);
+        lastX = xpos;
+        lastY = ypos;
+    }
+
+
 }
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
@@ -279,9 +307,17 @@ int main()
 
     ShaderProgram textureShaderProgram({{"shaders/vertexQuad.glsl", GL_VERTEX_SHADER},
                                         {"shaders/fragmentQuad.glsl", GL_FRAGMENT_SHADER}});
+
     ShaderProgram pointLightShadowShaderProgram({{"shaders/vertexPointLightShadow.glsl", GL_VERTEX_SHADER},
                                                  {"shaders/geometryPointLightShadow.glsl", GL_GEOMETRY_SHADER},
                                                  {"shaders/fragmentPointLightShadow.glsl", GL_FRAGMENT_SHADER}});
+
+    ShaderProgram defferedGeometryPassShaderProgram({{"shaders/vertexInstancing2.glsl", GL_VERTEX_SHADER},
+                                              {"shaders/fragmentDefferedShading.glsl", GL_FRAGMENT_SHADER}});
+    uniformObj.bindToShader(defferedGeometryPassShaderProgram, "TViewProjMatrices");
+
+    ShaderProgram defferedLightingPassShaderProgram({{"shaders/vertexQuad.glsl", GL_VERTEX_SHADER},
+                                                    {"shaders/fragmentMaterialVertexDeffered.glsl", GL_FRAGMENT_SHADER}});
 
 //    Model model("models/nanosuit/nanosuit.obj");
 
@@ -315,8 +351,10 @@ int main()
                 // positions        // texture Coords
                 -1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
                 -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
-                 1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
                  1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+                 1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+                 1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
+                -1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
             };
     // setup plane VAO
     GLuint quadVAO, quadVBO;
@@ -331,7 +369,8 @@ int main()
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 
 
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+//    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
     // ------
     std:: vector<Cube> cubes;
@@ -422,6 +461,7 @@ int main()
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+//    glDisable(GL_BLEND);
 
     FpsEstimator fps;
 
@@ -431,7 +471,8 @@ int main()
 
     vox::VoxExporter voxModel("models/castle.vox");
 
-    ImageLoader heightMap("textures/Heightmap.png");
+    ImageLoader heightMap("textures/myHeightmap.png");
+//    ImageLoader heightMap("textures/5275-heightmap-test.png");
 
     // ============== voxel Model loader =======================
 //    VoxelArray vArray(voxModel.getModel(0).getNumVoxels());
@@ -450,15 +491,25 @@ int main()
     // ==========================================================
 
     // ============== ground surface loader =====================
-    VoxelArray2d vArray(heightMap.getWidth(), heightMap.getHeight());
-
+    float voxelSize = 0.1f;
+    float numberOfLevels = 10.0F;
+//    VoxelArray2d vArray(voxelSize);
+    VoxelArray3d vArray(voxelSize);
     for(unsigned int xIdx = 0; xIdx < heightMap.getWidth(); ++xIdx)
         for(unsigned int yIdx = 0; yIdx < heightMap.getHeight(); ++yIdx)
         {
-            float height = std::round(heightMap.getPixel(ImageLoader::PixelDataType::R, xIdx, yIdx) * 10.0f) * .1f;
-            vArray.set(xIdx, yIdx, {glm::vec3(xIdx * 0.1f, height, yIdx * 0.1f), glm::vec3(0.5f)});
+            unsigned int height = std::round(heightMap.getPixel(ImageLoader::PixelDataType::R, xIdx, yIdx) * numberOfLevels);
+            float color = heightMap.getPixel(ImageLoader::PixelDataType::R, xIdx, yIdx);
+//            vArray.set(xIdx, yIdx, {glm::vec3(xIdx, height, yIdx) * voxelSize, glm::vec3(0.0f, height/numberOfLevels, 1.0f - height/numberOfLevels)});
+            vArray.setHeigth(xIdx, yIdx, height, glm::vec3(0.0, color, 1.0 - color));
+
 //            vArray.set(xIdx, yIdx, {glm::vec3(xIdx * 0.1f, xIdx * 0.1f, yIdx * 0.1f), glm::vec3(0.5f)});
         }
+//    vArray.setHeigth(0, 0, 0, glm::vec3(0.5, 0.5, 0.5), glm::vec3(3.0, 1.0, 1.0));
+//    vArray.setHeigth(1, 1, 0, glm::vec3(0.5, 0.5, 0.5), glm::vec3(1.0, 2.0, 1.0));
+//    vArray.setHeigth(2, 2, 0, glm::vec3(0.5, 0.5, 0.5), glm::vec3(1.0, 1.0, 4.0));
+
+    vArray.construct();
     // ==========================================================
 
 
@@ -468,7 +519,13 @@ int main()
     Viewport shadowsRenderViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
 
     FrameBuffer directLightShadowFB(GL_FRAMEBUFFER);
-    TextureBuffer directLightShadow(SHADOW_WIDTH, SHADOW_HEIGHT, directLightShadowFB);
+    TextureBuffer directLightShadow(SHADOW_WIDTH, SHADOW_HEIGHT/*, directLightShadowFB*/);
+//    directLightShadowFB.bind();
+//    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, directLightShadow.getId(), 0);
+//    glDrawBuffer(GL_NONE);
+//    glReadBuffer(GL_NONE);
+//    directLightShadowFB.unbind();
+    directLightShadowFB.attachTextures2D({{.attachTo = GL_DEPTH_ATTACHMENT, .texture = directLightShadow.getId()}});
 
     float near_plane = 0.0f, far_plane = 30.0f;
     glm::mat4 lightProjection = glm::ortho(-20.0f, 20.0f, -20.0f, 20.0f, near_plane, far_plane);
@@ -509,6 +566,15 @@ int main()
     //-----------------------------------------------------------------------------------------------
 
 
+    // deffered shading prepare
+    FrameBuffer defferedShadingFB(GL_FRAMEBUFFER);
+    TextureBuffer positionBuff(screenWidth, screenHeight, {.internalFormat=GL_RGB16F, .pixelFormat=GL_RGB, .pixelType=GL_FLOAT});
+    TextureBuffer normalBuff(screenWidth, screenHeight, {.internalFormat=GL_RGB16F, .pixelFormat=GL_RGB, .pixelType=GL_FLOAT});
+    TextureBuffer albedoSpecBuff(screenWidth, screenHeight, {.internalFormat=GL_RGBA, .pixelFormat=GL_RGBA, .pixelType=GL_UNSIGNED_BYTE});
+
+    RenderBuffer defferedShadingRB(screenWidth, screenHeight, GL_DEPTH_COMPONENT);
+    defferedShadingFB.attachTextures2D({{GL_COLOR_ATTACHMENT0, positionBuff.getId()}, {GL_COLOR_ATTACHMENT1, normalBuff.getId()}, {GL_COLOR_ATTACHMENT2, albedoSpecBuff.getId()}});
+    defferedShadingFB.attachRenderBuffer(defferedShadingRB, GL_DEPTH_ATTACHMENT);
 
     while(!glfwWindowShouldClose(window))
     {
@@ -518,7 +584,6 @@ int main()
         lastFrame = currentFrame;
 
         processInput(window);
-
 
         glfwPollEvents();
 
@@ -556,29 +621,35 @@ int main()
 
 //        model.draw(cubeRefractionShaderProgram);
 
-        // render directional light shadow map
-        glCullFace(GL_FRONT);
-        shadowsRenderViewport.activate();
-        directLightShadowFB.bind();
-        glClear(GL_DEPTH_BUFFER_BIT);
-        directionShadowShaderProgram.use();
-        directionShadowShaderProgram.setUniform("lightSpaceMatrix", lightSpaceMatrix);
-        vArray.draw(directionShadowShaderProgram);
-        directLightShadowFB.unbind();
-        glCullFace(GL_BACK);
 
-        // render point light shadow map
-        shadowsRenderViewport.activate();
-        pointLightShadowFB.bind();
-        glClear(GL_DEPTH_BUFFER_BIT);
-        pointLightShadowShaderProgram.use();
-        pointLightShadowShaderProgram.setUniform("far_plane", far_p);
-        pointLightShadowShaderProgram.setUniform("lightPos", lightPos);
-        for (unsigned int i = 0; i < 6; ++i)
-            pointLightShadowShaderProgram.setUniform("shadowMatrices[" + std::to_string(i) + "]", shadowTransforms[i]);
-        vArray.draw(pointLightShadowShaderProgram);
-        pointLightShadowFB.unbind();
+        if(debug_flags.enableDirectShadowComputing)
+        {
+            // render directional light shadow map
+            glCullFace(GL_FRONT);
+            shadowsRenderViewport.activate();
+            directLightShadowFB.bind();
+            glClear(GL_DEPTH_BUFFER_BIT);
+            directionShadowShaderProgram.use();
+            directionShadowShaderProgram.setUniform("lightSpaceMatrix", lightSpaceMatrix);
+            vArray.draw();
+            directLightShadowFB.unbind();
+            glCullFace(GL_BACK);
+        }
 
+        if(debug_flags.enablePointShadowComputing)
+        {
+            // render point light shadow map
+            shadowsRenderViewport.activate();
+            pointLightShadowFB.bind();
+            glClear(GL_DEPTH_BUFFER_BIT);
+            pointLightShadowShaderProgram.use();
+            pointLightShadowShaderProgram.setUniform("far_plane", far_p);
+            pointLightShadowShaderProgram.setUniform("lightPos", lightPos);
+            for (unsigned int i = 0; i < 6; ++i)
+                pointLightShadowShaderProgram.setUniform("shadowMatrices[" + std::to_string(i) + "]", shadowTransforms[i]);
+            vArray.draw();
+            pointLightShadowFB.unbind();
+        }
 
         // render scene
         mainVeiwPort.activate();
@@ -588,66 +659,154 @@ int main()
         glm::mat4 view = camera.getView();
         glm::mat4 viewSkybox = glm::mat4(glm::mat3(camera.getView()));    // for skybbox
         glm::mat4 projection = glm::perspective(camera.getFieldOfView(), static_cast<float>(screenWidth) / static_cast<float>(screenHeight), 0.1f, 100.0f);
+
         glm::mat4 pv = projection * viewSkybox;
+#if 0
         // TODO: think about this workaround
         projViewProxy = pv;
+
+
 
         glDepthFunc(GL_LEQUAL);
         skyBoxShaderProgram.use();
         skyBox.draw(skyBoxShaderProgram);
         glDepthFunc(GL_LESS);
+#endif
 
         pv = projection * view;
         // TODO: think about this workaround
         projViewProxy = pv;
+#if 0   // geometry pass of the deffered shading
+        {
+            bool isEnabled = glIsEnabled(GL_BLEND);
+            glDisable(GL_BLEND);
+            defferedShadingFB.bind();
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            defferedGeometryPassShaderProgram.use();
+            defferedGeometryPassShaderProgram.setUniform("lightSpaceMatrix", lightSpaceMatrix);
+            vArray.draw();
+            defferedShadingFB.unbind();
+            if(isEnabled) glEnable(GL_BLEND);
+        }
+#endif
+#if 0
 
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        positionBuff.activate(GL_TEXTURE0);
+        textureShaderProgram.use();
+        textureShaderProgram.setUniform("screenTexture", positionBuff.getBindUnitID());
+        glBindVertexArray(quadVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glBindVertexArray(0);
+#endif
 
-        boxInstancingShaderProgram.use();
-        boxInstancingShaderProgram.setUniform("lightSpaceMatrix", lightSpaceMatrix);
-        boxInstancingShaderProgram.setUniform("viewPos", camera.getPosition());
-        boxInstancingShaderProgram.setUniform("directionalLight.direction", glm::vec3(-0.5f, -1.0f, -0.5f));
-        boxInstancingShaderProgram.setUniform("directionalLight.ambient",  glm::vec3(0.2f, 0.2f, 0.2f));
-        boxInstancingShaderProgram.setUniform("directionalLight.diffuse",  glm::vec3(0.0f, 0.0f, 0.0f));
-        boxInstancingShaderProgram.setUniform("directionalLight.specular", glm::vec3(0.0f, 0.0f, 0.0f));
+#if 0   // lighting pass of the deffered shading
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        positionBuff.activate(GL_TEXTURE0);
+        normalBuff.activate(GL_TEXTURE1);
+        albedoSpecBuff.activate(GL_TEXTURE2);
+
+        defferedLightingPassShaderProgram.use();
+        defferedLightingPassShaderProgram.setUniform("gPosition", positionBuff.getBindUnitID());
+        defferedLightingPassShaderProgram.setUniform("gNormal", normalBuff.getBindUnitID());
+        defferedLightingPassShaderProgram.setUniform("gAlbedoSpec", albedoSpecBuff.getBindUnitID());
+
+        defferedLightingPassShaderProgram.setUniform("viewPos", camera.getPosition());
+        defferedLightingPassShaderProgram.setUniform("directionalLight.direction", glm::vec3(-0.5f, -1.0f, -0.5f));
+        defferedLightingPassShaderProgram.setUniform("directionalLight.ambient",  glm::vec3(0.2f, 0.2f, 0.2f));
+        defferedLightingPassShaderProgram.setUniform("directionalLight.diffuse",  glm::vec3(0.0f, 0.0f, 0.0f));
+        defferedLightingPassShaderProgram.setUniform("directionalLight.specular", glm::vec3(0.0f, 0.0f, 0.0f));
 
         for(unsigned int idx = 0; idx < 1; idx++)
         {
             std::string variable = std::string("pointLights[") + std::to_string(idx) + std::string("].");
-            boxInstancingShaderProgram.setUniform((variable + std::string("position")).c_str(), pointLightPositions[idx]);
-            boxInstancingShaderProgram.setUniform((variable + std::string("ambient")).c_str(), glm::vec3(0.1f, 0.1f, 0.1f));
-            boxInstancingShaderProgram.setUniform((variable + std::string("diffuse")).c_str(), glm::vec3(0.5f, 0.5f, 0.5f));
-            boxInstancingShaderProgram.setUniform((variable + std::string("specular")).c_str(), glm::vec3(0.7f, 0.7f, 0.7f));
-            boxInstancingShaderProgram.setUniform((variable + std::string("constant")).c_str(), 1.0f);
-            boxInstancingShaderProgram.setUniform((variable + std::string("linear")).c_str(), 0.01f);
-            boxInstancingShaderProgram.setUniform((variable + std::string("quadratic")).c_str(), 0.12f);
+            defferedLightingPassShaderProgram.setUniform((variable + std::string("position")).c_str(), pointLightPositions[idx]);
+            defferedLightingPassShaderProgram.setUniform((variable + std::string("ambient")).c_str(), glm::vec3(0.1f, 0.1f, 0.1f));
+            defferedLightingPassShaderProgram.setUniform((variable + std::string("diffuse")).c_str(), glm::vec3(0.5f, 0.5f, 0.5f));
+            defferedLightingPassShaderProgram.setUniform((variable + std::string("specular")).c_str(), glm::vec3(0.7f, 0.7f, 0.7f));
+            defferedLightingPassShaderProgram.setUniform((variable + std::string("constant")).c_str(), 1.0f);
+            defferedLightingPassShaderProgram.setUniform((variable + std::string("linear")).c_str(), 0.01f);
+            defferedLightingPassShaderProgram.setUniform((variable + std::string("quadratic")).c_str(), 0.12f);
         }
 
-        boxInstancingShaderProgram.setUniform("spotLight.ambient",  glm::vec3(0.0f, 0.0f, 0.0f));
-        boxInstancingShaderProgram.setUniform("spotLight.diffuse",  glm::vec3(0.0f, 0.0f, 0.0f)); // darken the light a bit to fit the scene
-        boxInstancingShaderProgram.setUniform("spotLight.specular", glm::vec3(0.0f, 0.0f, 0.0f));
-        boxInstancingShaderProgram.setUniform("spotLight.position", camera.getPosition());
-        boxInstancingShaderProgram.setUniform("spotLight.direction", camera.getDirection());
-        boxInstancingShaderProgram.setUniform("spotLight.cutOff",  glm::cos(glm::radians(12.5f)));
-        boxInstancingShaderProgram.setUniform("spotLight.outerCutOff",  glm::cos(glm::radians(17.5f)));
-        boxInstancingShaderProgram.setUniform("spotLight.constant",  1.0f);
-        boxInstancingShaderProgram.setUniform("spotLight.linear",    0.09f);
-        boxInstancingShaderProgram.setUniform("spotLight.quadratic", 0.032f);
+        defferedLightingPassShaderProgram.setUniform("spotLight.ambient",  glm::vec3(0.0f, 0.0f, 0.0f));
+        defferedLightingPassShaderProgram.setUniform("spotLight.diffuse",  glm::vec3(0.0f, 0.0f, 0.0f)); // darken the light a bit to fit the scene
+        defferedLightingPassShaderProgram.setUniform("spotLight.specular", glm::vec3(0.0f, 0.0f, 0.0f));
+        defferedLightingPassShaderProgram.setUniform("spotLight.position", camera.getPosition());
+        defferedLightingPassShaderProgram.setUniform("spotLight.direction", camera.getDirection());
+        defferedLightingPassShaderProgram.setUniform("spotLight.cutOff",  glm::cos(glm::radians(12.5f)));
+        defferedLightingPassShaderProgram.setUniform("spotLight.outerCutOff",  glm::cos(glm::radians(17.5f)));
+        defferedLightingPassShaderProgram.setUniform("spotLight.constant",  1.0f);
+        defferedLightingPassShaderProgram.setUniform("spotLight.linear",    0.09f);
+        defferedLightingPassShaderProgram.setUniform("spotLight.quadratic", 0.032f);
 
-        directLightShadow.activate(GL_TEXTURE0);
-        pointLightShadow.activate(GL_TEXTURE1);
+        glBindVertexArray(quadVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glBindVertexArray(0);
+#endif
 
-        boxInstancingShaderProgram.setUniform("shadowMap", directLightShadow.getBindUnitID());
-        boxInstancingShaderProgram.setUniform("depthMap", pointLightShadow.getBindUnitID());
-        boxInstancingShaderProgram.setUniform("far_plane", far_p);
+        if(debug_flags.enableSceneRendering)
+        {
+            boxInstancingShaderProgram.use();
+            boxInstancingShaderProgram.setUniform("lightSpaceMatrix", lightSpaceMatrix);
+            boxInstancingShaderProgram.setUniform("viewPos", camera.getPosition());
+            boxInstancingShaderProgram.setUniform("directionalLight.direction", glm::vec3(-0.5f, -1.0f, -0.5f));
+            boxInstancingShaderProgram.setUniform("directionalLight.ambient",  glm::vec3(0.3f, 0.3f, 0.3f));
+            boxInstancingShaderProgram.setUniform("directionalLight.diffuse",  glm::vec3(0.0f, 0.0f, 0.0f));
+            boxInstancingShaderProgram.setUniform("directionalLight.specular", glm::vec3(0.0f, 0.0f, 0.0f));
 
-        vArray.draw(boxInstancingShaderProgram);
+            for(unsigned int idx = 0; idx < 1; idx++)
+            {
+                std::string variable = std::string("pointLights[") + std::to_string(idx) + std::string("].");
+                boxInstancingShaderProgram.setUniform((variable + std::string("position")).c_str(), pointLightPositions[idx]);
+                boxInstancingShaderProgram.setUniform((variable + std::string("ambient")).c_str(), glm::vec3(0.1f, 0.1f, 0.1f));
+                boxInstancingShaderProgram.setUniform((variable + std::string("diffuse")).c_str(), glm::vec3(0.5f, 0.5f, 0.5f));
+                boxInstancingShaderProgram.setUniform((variable + std::string("specular")).c_str(), glm::vec3(0.7f, 0.7f, 0.7f));
+                boxInstancingShaderProgram.setUniform((variable + std::string("constant")).c_str(), 1.0f);
+                boxInstancingShaderProgram.setUniform((variable + std::string("linear")).c_str(), 0.01f);
+                boxInstancingShaderProgram.setUniform((variable + std::string("quadratic")).c_str(), 0.12f);
+            }
 
+            boxInstancingShaderProgram.setUniform("spotLight.ambient",  glm::vec3(0.0f, 0.0f, 0.0f));
+            boxInstancingShaderProgram.setUniform("spotLight.diffuse",  glm::vec3(0.0f, 0.0f, 0.0f)); // darken the light a bit to fit the scene
+            boxInstancingShaderProgram.setUniform("spotLight.specular", glm::vec3(0.0f, 0.0f, 0.0f));
+            boxInstancingShaderProgram.setUniform("spotLight.position", camera.getPosition());
+            boxInstancingShaderProgram.setUniform("spotLight.direction", camera.getDirection());
+            boxInstancingShaderProgram.setUniform("spotLight.cutOff",  glm::cos(glm::radians(12.5f)));
+            boxInstancingShaderProgram.setUniform("spotLight.outerCutOff",  glm::cos(glm::radians(17.5f)));
+            boxInstancingShaderProgram.setUniform("spotLight.constant",  1.0f);
+            boxInstancingShaderProgram.setUniform("spotLight.linear",    0.09f);
+            boxInstancingShaderProgram.setUniform("spotLight.quadratic", 0.032f);
+
+            directLightShadow.activate(GL_TEXTURE0);
+            pointLightShadow.activate(GL_TEXTURE1);
+
+            boxInstancingShaderProgram.setUniform("shadowMap", directLightShadow.getBindUnitID());
+            boxInstancingShaderProgram.setUniform("depthMap", pointLightShadow.getBindUnitID());
+            boxInstancingShaderProgram.setUniform("far_plane", far_p);
+
+            vArray.draw();
+        }
+
+#if 1
         glDisable(GL_DEPTH_TEST);
         glyphShaderProgram.use();
         glyphShaderProgram.setUniform("projection", projectionGlyph);
         glyphShaderProgram.setUniform("text", 0);
-        RenderText(glyphShaderProgram, std::string("fps: ") + std::to_string(static_cast<int>(fps.get())), 25.0f, 25.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f), VAO, VBO);
+        static unsigned long long count = 0;
+        RenderText(glyphShaderProgram, std::string("fps: ") + std::to_string(static_cast<int>(fps.get())), 25.0f, 25.0f, 0.5f, glm::vec3(0.5, 0.8f, 0.2f), VAO, VBO);
+        RenderText(glyphShaderProgram, std::string("cnt: ") + std::to_string(count++), 25.0f, 60.0f, 0.5f, glm::vec3(0.5, 0.8f, 0.2f), VAO, VBO);
+        RenderText(glyphShaderProgram, std::string("direct shadow: ") + (debug_flags.enableDirectShadowComputing ? "enabled" : "disabled"), 25.0f, 75.0f, 0.5f, glm::vec3(0.5, 0.8f, 0.2f), VAO, VBO);
+        RenderText(glyphShaderProgram, std::string("point shadow: ") + (debug_flags.enablePointShadowComputing ? "enabled" : "disabled"), 25.0f, 90.0f, 0.5f, glm::vec3(0.5, 0.8f, 0.2f), VAO, VBO);
+        RenderText(glyphShaderProgram, std::string("scene rendering: ") + (debug_flags.enableSceneRendering ? "enabled" : "disabled"), 25.0f, 105.0f, 0.5f, glm::vec3(0.5, 0.8f, 0.2f), VAO, VBO);
         glEnable(GL_DEPTH_TEST);
+#endif
+        GLenum  error = glGetError();
+
+        if(error != GL_NO_ERROR)
+        {
+//            throw std::runtime_error("OpenGL error: " + std::to_string(error));
+        }
 
         glfwSwapBuffers(window);
     }

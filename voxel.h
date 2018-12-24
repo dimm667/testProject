@@ -18,6 +18,7 @@ struct Voxel
 {
     glm::vec3 position;
     glm::vec3 color;
+    glm::vec3 dimension;
 };
 
 class VoxelArray
@@ -39,24 +40,57 @@ private:
     unsigned int size;
 };
 
+class VoxelCubeBufferObject
+{
+public:
+    static const unsigned int sizeOfVertex = sizeof(voxelVertex);
+
+//    void * getComponentOffset(int componentIndex);
+
+    VoxelCubeBufferObject(float voxelSize);
+    void bindBuffer();
+    float getSize() {return dimension;}
+private:
+    float dimension = 0.1f;
+    GLuint vbo;
+};
+
 class VoxelArray2d
 {
 public:
-    VoxelArray2d(unsigned int sizeX, unsigned int sizeY);
+    VoxelArray2d(float voxelSize = 0.1);
 
     void set(unsigned int x, unsigned int y, Voxel value);
+    void construct();
 
-    void draw(ShaderProgram & shader);
+    void draw();
 
 private:
-    static constexpr float dimension = 0.1f;
+//    float dimension;
+    VoxelCubeBufferObject cubeBuffer;
+    GLuint /*cubeVBO, */cubeVAO, instanceVBO;
 
-    GLuint cubeVBO, cubeVAO, instanceVBO;
-
-    std::vector<voxelVertex> cube;
+//    std::vector<voxelVertex> cube;
 
     std::vector<Voxel> voxel;
-    unsigned int xSize, ySize;
+//    unsigned int xSize, ySize;
+
+};
+
+class VoxelArray3d
+{
+public:
+    VoxelArray3d(float voxelSize = 0.1);
+    void setHeigth(unsigned int x, unsigned int y, unsigned int z, glm::vec3 color, glm::vec3 dimensions = glm::vec3(1.0, 1.0, 1.0));
+
+    void construct();
+
+    void draw();
+
+private:
+    VoxelCubeBufferObject cubeBuffer;
+    GLuint cubeVAO, instanceVBO;
+    std::vector<Voxel> voxel;
 
 };
 

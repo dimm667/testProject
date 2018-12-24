@@ -39,8 +39,8 @@ Texture::~Texture()
     glDeleteTextures(1, &texID);
 }
 
-TextureBuffer::TextureBuffer(int buffWidth, int buffHeight, FrameBuffer & fb, TexImageFormat format, GLenum attachment) :
-    Texture(GL_TEXTURE_2D), frameBuffer(fb), width(buffWidth), height(buffHeight)
+TextureBuffer::TextureBuffer(int buffWidth, int buffHeight, /*FrameBuffer & fb,*/ TexImageFormat format/*, GLenum attachment*/) :
+    Texture(GL_TEXTURE_2D), /*frameBuffer(fb),*/ width(buffWidth), height(buffHeight)
 {
     glBindTexture(textureType, texID);
 
@@ -53,7 +53,7 @@ TextureBuffer::TextureBuffer(int buffWidth, int buffHeight, FrameBuffer & fb, Te
                           {GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE},
                           {GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE}});
 
-    frameBuffer.attachTextures2D({{attachment, texID}});
+//    frameBuffer.attachTextures2D({{attachment, texID}});
 }
 
 TextureCubeMapBuffer::TextureCubeMapBuffer(int buffWidth, int buffHeight, FrameBuffer & fb, TexImageFormat format, GLenum attachment) :
