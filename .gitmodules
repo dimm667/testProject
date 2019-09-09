@@ -1,3 +1,6 @@
 [submodule "deps/assimp"]
 	path = deps/assimp
 	url = https://github.com/assimp/assimp.git
+[submodule "deps/freetype2"]
+	path = deps/freetype2
+	url = https://git.sv.nongnu.org/r/freetype/freetype2.git
