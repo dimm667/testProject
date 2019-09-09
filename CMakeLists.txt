@@ -7,15 +7,17 @@ set (CMAKE_BUILD_TYPE Debug)
 
 find_package(OpenGL REQUIRED)
 
-
 # link to glfw library
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 add_subdirectory(${CMAKE_SOURCE_DIR}/deps/glfw-3.2.1/)
+add_subdirectory(${CMAKE_SOURCE_DIR}/deps/assimp/)
+add_subdirectory(${CMAKE_SOURCE_DIR}/deps/freetype2/)
 
 #link to glad
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/deps/glad/include/
+                    ${CMAKE_SOURCE_DIR}/deps/freetype2/include/
                     ${CMAKE_SOURCE_DIR}/deps/)
 
 set(GLAD ${CMAKE_SOURCE_DIR}/deps/glad/include/glad/glad.h
@@ -115,11 +117,11 @@ SET(SOURCES
 file(GLOB_RECURSE shaders_data ${CMAKE_SOURCE_DIR}/shaders/*)
 file(GLOB_RECURSE textures_data LIST_DIRECTORIES true textures/*)
 file(GLOB_RECURSE fonts_data ${CMAKE_SOURCE_DIR}/fonts/*)
-file(GLOB_RECURSE libs_data ${CMAKE_SOURCE_DIR}/deps/libassimp.dll)
+#file(GLOB_RECURSE libs_data ${CMAKE_SOURCE_DIR}/deps/libassimp.dll)
 file(GLOB_RECURSE models_data LIST_DIRECTORIES true models/*)
 
 link_directories(${CMAKE_SOURCE_DIR}/deps/)
-add_library(assimp STATIC IMPORTED)
+#add_library(assimp STATIC IMPORTED)
 
 add_executable(${PROJECT_NAME}
     ${SOURCES}
@@ -129,7 +131,7 @@ add_executable(${PROJECT_NAME}
     ${TEXTURES}
     ${FONTS})
 
-target_link_libraries(${PROJECT_NAME} glfw "assimp.dll" "freetype")
+target_link_libraries(${PROJECT_NAME} glfw assimp freetype)
 
 file(COPY ${shaders_data} DESTINATION shaders)
 file(COPY ${textures_data} DESTINATION textures)

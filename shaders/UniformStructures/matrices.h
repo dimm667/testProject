@@ -1,9 +1,9 @@
 #pragma once
 #include <glm/glm.hpp>
 
-struct TViewProjMatrices
+struct alignas(4*16) TViewProjMatrices
 {
-    glm::mat4 alignas(4*16) view;
-    glm::mat4 alignas(4*16) projection;
-    glm::mat4 alignas(4*16) proj_view;
+    glm::mat4 view;
+    glm::mat4 projection;
+    glm::mat4 proj_view;
 };

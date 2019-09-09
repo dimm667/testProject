@@ -434,7 +434,7 @@ int main()
             texture,
             glm::ivec2(static_cast<int>(face->glyph->bitmap.width), static_cast<int>(face->glyph->bitmap.rows)),
             glm::ivec2(static_cast<int>(face->glyph->bitmap_left), static_cast<int>(face->glyph->bitmap_top)),
-            face->glyph->advance.x
+            static_cast<int>(face->glyph->advance.x)
         };
         Characters.insert(std::pair<GLchar, Character>(c, character));
     }

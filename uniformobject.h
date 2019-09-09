@@ -85,7 +85,7 @@ public:
         Q & operator=(Q & other)
         {
             value = other;
-            ref_outer.updatePartial<Q, offset, size>(value);
+            ref_outer.template updatePartial<Q, offset, size>(value);
             return value;
         }
 
