@@ -275,9 +275,10 @@ VoxelArray3d::VoxelArray3d(float voxelSize) :
 
 void VoxelArray3d::setHeigth(unsigned int x, unsigned int y, unsigned int z, glm::vec3 color, glm::vec3 dimensions)
 {
-    for(unsigned int zVal = z; zVal <= z; zVal--)
+//    for(unsigned int zVal = z; zVal <= z; zVal--)
     {
-        Voxel v{glm::vec3(x, zVal, y) * cubeBuffer.getSize(), color, glm::vec3(dimensions.x, dimensions.z, dimensions.y)};
+//        Voxel v{glm::vec3(x, zVal, y) * cubeBuffer.getSize(), color, glm::vec3(dimensions.x, dimensions.z, dimensions.y)};
+        Voxel v{glm::vec3(x, 0, y) * cubeBuffer.getSize(), color, glm::vec3(dimensions.x, z * dimensions.z, dimensions.y)};
         voxel.push_back(v);
     }
 }
